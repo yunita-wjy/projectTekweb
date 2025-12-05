@@ -79,6 +79,22 @@
             color: #444;
         }
 
+        .genre-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .genre-select {
+            width: 220px !important;
+            max-width: 220px;
+            min-width: 220px;
+        }
+
+        .btn-add {
+            width: 45px;
+        }
+
 
     </style>
 
@@ -209,12 +225,19 @@
                                     <div class="row align-items-center mb-3 mt-3">
                                         <label for="genre" class="col-sm-3 col-form-label">Genre</label>
                                         <div class="col-sm-9">
-                                            <select id="genre" name="genreDropdown" class="form-select" style="width: 200px;">
-                                                <!-- OPTION BASED DI DATABASE -->
-                                                <option value="option1">Option 1</option>
-                                                <option value="option2">Option 2</option>
-                                                <option value="option3">Option 3</option>
-                                            </select>
+                                            <div id="genre-container">
+
+                                                <!-- ROW PERTAMA -->
+                                                <div class="genre-row">
+                                                    <select class="form-select genre-select">
+                                                        <option value="" disabled selected>Pilih genre</option>
+                                                    </select>
+
+                                                    <!-- tombol + hanya ada di baris terakhir -->
+                                                    <button type="button" class="btn btn-primary btn-add fw-bold" style="font-size: 16px;">+</button>
+                                                </div>
+
+                                            </div>
                                         </div>
                                     </div>
                                     <div class="row align-items-center mb-3 mt-3">
@@ -321,7 +344,7 @@
         
 
         <script>
-
+            // GANTI TAB
             const btnMovies = document.getElementById("btnMovies");
             const btnGenres = document.getElementById("btnGenres");
 
@@ -351,6 +374,109 @@
                 contentGenres.classList.remove("d-none");
                 contentMovies.classList.add("d-none");
             };
+
+            // DROPDOWN GENRE
+            // daftar genre (BELUM AMBIL DARI DATABASE)
+            const genres = [
+            "Action", "Adventure", "Animation", "Comedy", "Crime",
+            "Drama", "Fantasy", "Horror", "Romance", "Sci-Fi",
+            "Thriller"
+            ];
+
+            // fungsi untuk mengisi select
+            function populateSelect(select) {
+                // simpan value select sebelum di-reset
+                let currentValue = select.value;
+
+                // reset isi select
+                select.innerHTML = '<option value="" disabled>Pilih genre</option>';
+
+                // daftar value yg sudah dipakai select lain
+                let used = [...document.querySelectorAll(".genre-select")]
+                    .map(s => s.value)
+                    .filter(v => v !== "" && v !== null);
+
+                genres.forEach(g => {
+                    // genre yang sedang terpilih HARUS tetap dimasukkan
+                    if (!used.includes(g) || g === currentValue) {
+                        const opt = document.createElement("option");
+                        opt.value = g;
+                        opt.textContent = g;
+                        select.appendChild(opt);
+                    }
+                });
+
+                // kembalikan value sebelumnya
+                select.value = currentValue;
+            }
+
+            // isi select pertama
+            populateSelect(document.querySelector(".genre-select"));
+
+            // EVENT TAMBAH SELECT BARU
+            document.getElementById("genre-container").addEventListener("click", function(e) {
+                if (e.target.classList.contains("btn-add")) {
+
+                    let selects = document.querySelectorAll(".genre-select");
+
+                    // batas maksimal 5 genre
+                    if (selects.length >= 5) {
+                        alert("Maksimal 5 genre.");
+                        return;
+                    }
+                    // CEK APAKAH SEMUA SELECT SUDAH TERISI
+                    for (let s of selects) {
+                        if (s.value === "") {
+                            alert("Harap pilih genre terlebih dahulu sebelum menambah lagi.");
+                            return; // stop penambahan
+                        }
+                    }
+
+                    // hapus tombol + dari baris sebelumnya
+                    e.target.remove();
+
+                    // buat baris baru
+                    const newRow = document.createElement("div");
+                    newRow.className = "genre-row";
+
+                    const newSelect = document.createElement("select");
+                    newSelect.className = "form-select genre-select";
+
+                    const newBtn = document.createElement("button");
+                    newBtn.className = "btn btn-primary btn-add";
+                    newBtn.textContent = "+";
+                    newBtn.type = "button";
+
+                    newRow.appendChild(newSelect);
+                    newRow.appendChild(newBtn);
+
+                    document.getElementById("genre-container").appendChild(newRow);
+
+                    // refresh select semuanya
+                    document.querySelectorAll(".genre-select").forEach(s => populateSelect(s));
+
+                }
+            });
+
+
+            // UPDATE SELECT SAAT DIGANTI
+            document.getElementById("genre-container").addEventListener("change", function(e) {
+                if (e.target.classList.contains("genre-select")) {
+
+                    // 1. Simpan semua value select sebelum populate ulang
+                    let allSelects = document.querySelectorAll(".genre-select");
+                    let oldValues = [...allSelects].map(s => s.value);
+
+                    // 2. populate ulang semua select
+                    allSelects.forEach(s => populateSelect(s));
+
+                    // 3. kembalikan value untuk setiap select
+                    allSelects.forEach((s, index) => {
+                        s.value = oldValues[index];
+                    });
+                }
+            });
+
         </script>
 
         <!-- Bootstrap JS -->
