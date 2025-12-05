@@ -12,7 +12,7 @@
 <!DOCTYPE html>
 <html>
     <head>
-        <title>Manage Movies</title>
+        <title>Admin Manage Movies</title>
         <!-- Boostrap -->
         <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 
@@ -306,9 +306,11 @@
 
                         <!-- form add genre -->
                         <div class="card mt-4 shadow">
+                            <!-- card header -->
                             <div class="card-title bg-primary text-white fw-bold px-4 py-3">
                                 ADD GENRE HERE
                             </div>
+                            <!-- card body -->
                             <div class="card-body px-4">
                                 <form>
                                     <div class="row align-items-center mb-3 mt-1">
@@ -318,7 +320,7 @@
                                         </div>
                                     </div>
                                 </form>
-
+                                <!-- card footer -->
                                 <div class="text-end">
                                     <button class="btn btn-success fw-bold">Save</button>
                                 </div>
