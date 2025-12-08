@@ -9,21 +9,17 @@
     // }
 ?>
 
-
 <!DOCTYPE html>
 <html>
     <head>
-        <title>Admin Manage Showtimes</title>
+        <title>Admin Manage</title>
         <!-- Boostrap -->
         <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 
         <!-- jQuery library -->
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-
-        <!-- Chartist -->
-        <link rel="stylesheet" href="https://cdn.jsdelivr.net/chartist.js/latest/chartist.min.css">
     </head>
-
+    
     <body>
     <style>
         /* Perbesar icon burger */
@@ -50,7 +46,6 @@
             color: #00FFFF !important; 
         }
     </style>
-    
         <div class="container-fluid px-0">
             <nav class="navbar navbar-dark bg-dark px-3 py-3 col-12">
                 <!-- always visible burger -->
@@ -112,78 +107,65 @@
 
             <!-- CONTENT PAGE -->
              <div class="container px-4">
-                <!-- subtitile & search button -->
-                <div class="row d-flex align-items-center g-3">
-                    <div class="col-lg-6 col-md-6 col-sm-12"> 
-                        <h1 class="mb-4 mt-4">LIST OF STUDIOS</h1>
-                    </div>
-                    <div class="col-lg-6 col-md-6 col-sm-12"> 
-                        <form class="d-flex">
-                            <input class="form-control me-2" type="search" placeholder="Search Studio" aria-label="Search">
-                            <button class="btn btn-outline-primary" type="submit">Search</button>
-                        </form>
-                    </div>
-                </div>
 
-                <!-- table of studios -->
-                <div class="row mt-4">
-                    <table class="table table-striped">
-                        <thead>
-                            <tr>
-                                <th>No</th>
-                                <th>Studio Name</th>
-                                <th>Capacity</th>
-                                <th>Status</th> <!--active/inactive-->
-                                <th>Action</th> <!--edit/delete-->
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <!-- KURANG SAMBUNGIN KE DATABASE -->
-                        </tbody>
-                    </table>
-                </div>
 
-                <!-- form add studio -->
-                <div class="card mt-4 mb-4 shadow overflow-hidden" style="width: 100%; ">
-                    <!-- card header -->
-                    <div class="card-title bg-primary text-white fw-bold px-4 py-3" style="border-top-left-radius: 5px; border-top-right-radius: 5px; font-size: 18px">
-                        ADD STUDIO HERE
-                    </div>
-                    <!-- card body -->
-                    <div class="card-body px-4">
-                        <form>
-                            <div class="row align-items-center mb-3 mt-1">
-                                <label class="col-sm-3 col-form-label">Name of the Studio</label>
-                                <div class="col-sm-9">
-                                    <input class="form-control" type="text">
-                                </div>
-                            </div>
-                            <div class="row align-items-center mb-3 mt-1">
-                                <label class="col-sm-3 col-form-label">Capacity (pax)</label>
-                                <div class="col-sm-9">
-                                    <input class="form-control" type="text">
-                                </div>
-                            </div>
-                            <div class="row align-items-center mb-3 mt-3">
-                                <label for="genre" class="col-sm-3 col-form-label">Status</label>
-                                <div class="col-sm-9">
-                                    <select class="form-select genre-select">
-                                        <option value="" disabled selected>Pilih Status</option>
-                                        <option value="Active">Active</option>
-                                        <option value="Inactive">Inactive</option>
-                                    </select>
-
-                                </div>
-                            </div>
-
-                        </form>
-                        <!-- card footer -->
-                        <div class="text-end">
-                            <button class="btn btn-success fw-bold">Save</button>
+                <div class="container mt-5" style="max-width: 600px;">
+                    <div class="card shadow">
+                        <div class="card-header bg-primary text-white fw-bold">
+                            PRICE SETTINGS
                         </div>
-                    </div>
 
+                        <!-- CARD BODY MULAI DI SINI -->
+                        <div class="card-body">
+
+                            <!-- CURRENT PRICES -->
+                            <div class="mb-4 p-3 border rounded bg-light">
+                                <h5 class="fw-bold mb-3">Current Prices</h5>
+
+                                <p class="mb-1 ms-2">
+                                    <strong>> Weekday Price:</strong> 
+                                    <span class="text-primary fw-semibold">Rp 40,000</span>
+                                </p>
+
+                                <p class="mb-1 ms-2">
+                                    <strong>> Weekend Price:</strong> 
+                                    <span class="text-primary fw-semibold">Rp 45,000</span>
+                                </p>
+                            </div>
+
+                            <!-- UPDATE FORM -->
+                            <form method="POST">
+                                <div class="mb-3 mt-3">
+                                    <label class="form-label fw-bold">New Weekday Price</label>
+                                    <input type="number" 
+                                        class="form-control" 
+                                        name="weekday_price" 
+                                        placeholder="Enter new weekday price"
+                                        required>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">New Weekend Price</label>
+                                    <input type="number" 
+                                        class="form-control" 
+                                        name="weekend_price" 
+                                        placeholder="Enter new weekend price"
+                                        required>
+                                </div>
+
+                                <div class="text-end">
+                                    <button class="btn btn-success fw-bold">Save Changes</button>
+                                </div>
+                            </form>
+
+                        </div> <!-- card-body -->
+
+                    </div> <!-- card -->
                 </div>
+
+     
+
+                
 
 
 
@@ -196,13 +178,11 @@
 
 
         </div>
-
-
-
         <!-- Bootstrap JS -->
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
         
-
     </body>
+
+
 </html>
