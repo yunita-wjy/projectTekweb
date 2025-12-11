@@ -106,6 +106,7 @@
                         <li class="nav-item ms-4"><a class="nav-link text-white" href="#">Manage Movies</a></li>
                         <li class="nav-item ms-4"><a class="nav-link text-white" href="#">Manage Showtimes</a></li>
                         <li class="nav-item ms-4"><a class="nav-link text-white" href="#">Manage Studios</a></li>
+                        <li class="nav-item ms-4"><a class="nav-link text-white" href="#">Manage Prices</a></li>
                         <li class="nav-item ms-4"><a class="nav-link text-white" href="#">Manage Users</a></li>
                     </ul>
                 </div>
@@ -117,7 +118,7 @@
                 <!-- subtitile & search button -->
                 <div class="row d-flex align-items-center g-3">
                     <div class="col-lg-6 col-md-6 col-sm-12"> 
-                        <h1 class="mb-4 mt-4">LIST OF STUDIOS</h1>
+                        <h1 class="mb-4 mt-4">LIST OF SHOWTIMES</h1>
                     </div>
                     <div class="col-lg-6 col-md-6 col-sm-12"> 
                         <form class="d-flex">

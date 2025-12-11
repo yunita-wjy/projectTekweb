@@ -110,6 +110,7 @@
                     <li class="nav-item ms-4"><a class="nav-link text-white" href="#">Manage Movies</a></li>
                     <li class="nav-item ms-4"><a class="nav-link text-white" href="#">Manage Showtimes</a></li>
                     <li class="nav-item ms-4"><a class="nav-link text-white" href="#">Manage Studios</a></li>
+                    <li class="nav-item ms-4"><a class="nav-link text-white" href="#">Manage Prices</a></li>
                     <li class="nav-item ms-4"><a class="nav-link text-white" href="#">Manage Users</a></li>
                 </ul>
             </div>
