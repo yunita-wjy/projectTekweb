@@ -1,0 +1,143 @@
+:root {
+    --bg-primary: #f8f9fa;
+    --bg-secondary: #e6e6e6;
+    --btn-primary: #4ecdc4;
+    --text-dark: #0a0a0a;
+    --error-red: red;
+}
+
+body {
+    background-color: var(--bg-primary);
+    color: var(--text-dark);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.login-box {
+    background-color: var(--bg-secondary);
+    border-radius: 15px;
+    box-shadow: 0 10px 30px rgba(10, 10, 10, 0.1),
+        0 5px 15px rgba(248, 249, 250, 0.3);
+    padding: 2.5rem;
+    width: 100%;
+    /* max-width: 420px; */
+}
+
+.logo-container {
+    text-align: center;
+    margin-bottom: 1.5rem;
+}
+
+.logo-icon {
+    color: var(--btn-primary);
+    font-size: 2.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.company-name {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--text-dark);
+    letter-spacing: 1px;
+}
+
+.form-control {
+    background-color: var(--bg-primary);
+    border: 1px solid #ced4da;
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    color: var(--text-dark);
+}
+
+.form-control:focus {
+    background-color: var(--bg-primary);
+    border-color: var(--btn-primary);
+    box-shadow: 0 0 0 0.25rem rgba(78, 205, 196, 0.25);
+    color: var(--text-dark);
+}
+
+.password-container {
+    position: relative;
+}
+
+.password-toggle {
+    position: absolute;
+    right: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: #6c757d;
+    cursor: pointer;
+    z-index: 10;
+}
+
+.btn-login {
+    background-color: var(--btn-primary);
+    border: none;
+    color: white;
+    font-weight: 600;
+    padding: 0.75rem;
+    border-radius: 8px;
+    width: 100%;
+    transition: all 0.3s;
+}
+
+.btn-login:hover {
+    background-color: #3db9b1;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(78, 205, 196, 0.3);
+}
+
+.error-message {
+    color: var(--error-red);
+    font-size: 0.875rem;
+    margin-top: 0.25rem;
+}
+
+.form-check-input:checked {
+    background-color: var(--btn-primary);
+    border-color: var(--btn-primary);
+}
+
+.form-check-label {
+    color: var(--text-dark);
+}
+
+.register-link {
+    text-align: center;
+    margin-top: 1.5rem;
+    color: var(--text-dark);
+}
+
+.register-link a {
+    color: var(--btn-primary);
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.register-link a:hover {
+    text-decoration: underline;
+}
+
+/* Responsive adjustments */
+@media (min-width: 576px) {
+    .login-box {
+        padding: 2.5rem;
+        max-width: 450px;
+    }
+
+    .company-name {
+        font-size: 1.75rem;
+    }
+}
+
+@media (max-width: 1200px) and (min-width: 769px) {
+    .login-box {
+        padding: 2.5rem;
+        max-width: 750px;
+    }
+}
