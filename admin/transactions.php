@@ -21,139 +21,133 @@
 
         <!-- Chartist -->
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/chartist.js/latest/chartist.min.css">
+    
+        <style>
+            :root{ --accent: #4ecdc4; }
+            body { background: #f8f9fb; }
+            .sidebar { width: 220px; min-height:100vh; background: #111827; color:#fff; }
+            .sidebar a { color: #fff; text-decoration:none; }
+            .sidebar .nav-link.active { background: rgba(255,255,255,0.06); font-weight:700; color:var(--accent); }
+            .sidebar .nav-link:not(.active):hover { color: #ff4c29; }
+            .card-title.bg-primary { background:#0d6efd !important; } /* keep bootstrap */
+            .poster-thumb { width: 60px; height: 80px; object-fit:cover; border-radius:4px; }
+            .required { color: #dc3545; }
+    </style>
     </head>
     <body>
-    <style>
-        /* Perbesar icon burger */
-        .navbar-toggler {
-            border: none;
-            transform: scale(1.3);
-        }
 
-        /* Bikin icon burger putih */
-        .navbar-dark .navbar-toggler-icon {
-            filter: brightness(0) invert(1);
-        }
-        
-        #sideMenu .nav-item:hover {
-            font-weight: bold;
-            background-color: grey;
-            font-size: 18px;
-        }
+        <div class="d-flex">
 
-        #sideMenu .nav-item .nav-link:hover {
-            font-weight: bold;
-            background-color: grey;
-            font-size: 18px;
-            color: #00FFFF !important; 
-        }
-    </style>
-
-        <div class="container-fluid px-0">
-            <nav class="navbar navbar-dark bg-dark px-3 py-3 col-12">
-                <!-- always visible burger -->
-                <button class="navbar-toggler me-2" type="button" data-bs-toggle="offcanvas" data-bs-target="#sideMenu">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
-
-                <div class="ms-auto d-flex align-items-center me-2">
-
-                    <!-- admin text -->
-                    <span class="text-white fw-bold me-4" style="font-size: 18px">ADMIN</span>
-
-                    <!-- user admin dropdown (tanpa ikon segitiga) -->
-                    <div class="dropdown me-4">
-                        <button class="btn btn-outline-light  px-4 py-1" type="button"
-                                data-bs-toggle="dropdown" aria-expanded="false"
-                                style="border-width: 2px; border-radius: 4px;">
-
-                            <!-- NAMA ADMIN NYA BUTUH PHP-->
-                            SARAH
-
-                        </button>
-
-                        <ul class="dropdown-menu dropdown-menu-end mt-2">
-                            <li><a class="dropdown-item text-danger" href="../auth/logout.php">Logout</a></li>
-                        </ul>
-                    </div>
-
+            <!-- SIDEBAR (dekstop)-->
+            <div class="sidebar p-3 d-none d-md-block">
+                <div class="d-flex align-items-center mb-4">
+                    <img src="../assets/filmVerse-dark.png" width="44" class="me-2">
+                    <div><strong>FilmVerse</strong>
+                    <div style="font-size:12px; color:#9CA3AF">Admin Panel</div></div>
                 </div>
-            </nav>
+                <nav class="nav flex-column">
+                    <a class="nav-link mb-1" href="dashboard.php">Dashboard</a>
+                    <a class="nav-link mb-1" href="manage_movies.php">Manage Movies</a>
+                    <a class="nav-link mb-1" href="manage_showtimes.php">Manage Showtimes</a>
+                    <a class="nav-link mb-1" href="manage_studios.php">Manage Studios</a>
+                    <a class="nav-link mb-1" href="manage_prices.php">Manage Prices</a>
+                    <a class="nav-link mb-1" href="manage_users.php">Manage Users</a>
+                    <a class="nav-link mb-1 active" href="transactions.php">Transactions</a>
+                </nav>
+            </div>
 
-            <!-- offcanvas side menu -->
-            <div class="offcanvas offcanvas-start bg-dark text-white" tabindex="-1" id="sideMenu">
+            <!-- SIDEBAR OFFCANVAS (mobile) -->
+            <div class="offcanvas offcanvas-start sidebar p-3 text-bg-dark d-md-none" tabindex="-1" id="sideMenu">
                 <div class="offcanvas-header">
-
-                    <!-- logo -->
-                    <div class="d-flex align-items-center">
-                        <img src="../assets/filmVerse-dark.png" width="70" height="70" alt="" class="ms-2 me-1">
-                        <h5 class="offcanvas-title mb-0 fw-bold" style="font-size: 30px; font-family: 'Courier New', Courier, monospace;">FilmVerse</h5>
-                    </div>
-
-                    <!-- close button  -->
+                    <h5 class="offcanvas-title">FilmVerse</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
                 </div>
-
-                <div class="offcanvas-body">
-                    <h3 class="text-bold dark ms-3">Menu</h3>
-                    <ul class="nav flex-column">
-                        <li class="nav-item ms-4"><a class="nav-link text-white" href="#">Dashboard</a></li>
-                        <li class="nav-item ms-4"><a class="nav-link text-white" href="#">Transactions</a></li>
-                        <li class="nav-item ms-4"><a class="nav-link text-white" href="#">Manage Movies</a></li>
-                        <li class="nav-item ms-4"><a class="nav-link text-white" href="#">Manage Showtimes</a></li>
-                        <li class="nav-item ms-4"><a class="nav-link text-white" href="#">Manage Studios</a></li>
-                        <li class="nav-item ms-4"><a class="nav-link text-white" href="#">Manage Prices</a></li>
-                        <li class="nav-item ms-4"><a class="nav-link text-white" href="#">Manage Users</a></li>
-                    </ul>
+                <div class="offcanvas-body p-3">
+                    <nav class="nav flex-column">
+                        <a class="nav-link text-white" href="dashboard.php">Dashboard</a>
+                        <a class="nav-link text-white " href="manage_movies.php">Manage Movies</a>
+                        <a class="nav-link text-white" href="manage_showtimes.php">Manage Showtimes</a>
+                        <a class="nav-link text-white" href="manage_studios.php">Manage Studios</a>
+                        <a class="nav-link text-white" href="manage_prices.php">Manage Prices</a>
+                        <a class="nav-link text-white" href="manage_users.php">Manage Users</a>
+                        <a class="nav-link text-white fw-bold" href="transactions.php">Transactions</a>
+                    </nav>
                 </div>
             </div>
 
-            <!-- CONTENT PAGE -->
-            <div class="container px-4">
-                <!-- subtitile & search button -->
-                <div class="row d-flex align-items-center g-3">
-                    <div class="col-lg-6 col-md-6 col-sm-12"> 
-                        <h1 class="mb-4 mt-4">TRANSACTIONS</h1>
+            <!-- NAVBAR & CONTENT -->
+            <div class="flex-grow-1">
+                <!-- NAVBAR -->
+                <nav class="navbar navbar-dark bg-dark px-4">
+                    <div class="container-fluid">
+                        <div class="d-flex align-items-center">
+                            <button class="navbar-toggler d-md-none"
+                                    type="button"
+                                    data-bs-toggle="offcanvas"
+                                    data-bs-target="#sideMenu">
+                                <span class="navbar-toggler-icon"></span>
+                            </button>
+                            
+                            <span class="navbar-brand ms-2 fw-bold">Transactions</span>
+                        </div>
+
+                        <div class="d-flex align-items-center">
+                            <span class="text-white me-4 fw-bold">ADMIN</span>
+                            <div class="dropdown me-2">
+                                <button class="btn btn-outline-light btn-sm dropdown-toggle text-uppercase"
+                                        data-bs-toggle="dropdown">
+                                    <?= htmlspecialchars($_SESSION['user']['full_name']) ?>
+                                </button>                        
+                                <ul class="dropdown-menu dropdown-menu-end">
+                                    <li><a class="dropdown-item text-danger" href="../auth/logout.php">Logout</a></li>
+                                </ul>
+                            </div>
+                        </div>
                     </div>
-                    <div class="col-lg-6 col-md-6 col-sm-12"> 
-                        <form class="d-flex">
-                            <input class="form-control me-2" type="search" placeholder="Search User, Movie, Studio" aria-label="Search">
-                            <button class="btn btn-outline-primary" type="submit">Search</button>
-                        </form>
+                </nav>
+
+                <div class="container-fluid p-4">
+                    <!-- TRANSACTIONS -->
+                    <div class="card mb-4 shadow-sm">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0 fw-bold">RECENT TRANSACTIONS</h5>
+                            <form class="d-flex">
+                                <input id="searchTitle" class="form-control form-control-sm me-2" placeholder="Search User..." style="width: 200px;">
+                                <button id="btnSearch" class="btn btn-outline-primary btn-sm" type="button" >Search</button>
+                            </form>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="table-responsive">
+                                <table class="table mb-0">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>No</th>
+                                            <th>Date</th>
+                                            <th>Time</th> <!--order time-->
+                                            <th>User</th> <!--username-->
+                                            <th>Movie</th> 
+                                            <th>Showtime</th> <!--time showtime-->
+                                            <th>Studio</th> 
+                                            <th>Tickets Qty</th> 
+                                            <th>Total Price</th> 
+                                            <th>Status</th> <!--paid/unpaid (default paid)-->
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                    <!-- BUTUH AMBIL DARI DATABASE -->
+                                    </tbody>
+
+                                </table>
+
+                            </div>
+                        </div>
+
                     </div>
                 </div>
-                <div class="row">
-                    <label for="start-date" class="col-sm-3 col-form-label">Date Filter</label>
-                    <div class="col-sm-9">
-                        <input type="date" id="start-date" name="start-date" class="form-control" style="width: 200px;">
-                    </div>
-                </div>
-
-                <!-- table of transactions -->
-                <div class="row mt-4">
-                    <table class="table table-striped">
-                        <thead>
-                            <tr>
-                                <th>No</th>
-                                <th>Date</th>
-                                <th>Time</th> <!--order time-->
-                                <th>User</th> <!--username-->
-                                <th>Movie</th> 
-                                <th>Showtime</th> <!--time showtime-->
-                                <th>Studio</th> 
-                                <th>Tickets Qty</th> 
-                                <th>Total Price</th> 
-                                <th>Status</th> <!--paid/unpaid (default paid)-->
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <!-- KURANG SAMBUNGIN KE DATABASE -->
-                        </tbody>
-                    </table>
-                </div>
-
-
             </div>
+
+
+
 
 
         </div>
