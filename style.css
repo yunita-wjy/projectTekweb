@@ -67,18 +67,51 @@ nav ul li a {
 }
 
 nav .akun a {
-    background-color: #4ecdc4;
     padding: 8px 16px;
     border-radius: 5px;
-    color: black;
     text-decoration: none;
     margin-left: 20px;
 }
 
-nav .akun a:hover {
+nav .akun a.login {
+    background-color: #4ecdc4;
+    color: black;
+}
+
+nav .akun a.login:hover {
     background-color: #38b2ac;
     color: white;
 }
+
+.profile-toggle {
+    padding: 8px 14px;
+    border-radius: 5px;
+    color: black;
+    text-decoration: none;
+}
+
+.profile-toggle:hover {
+    color: white;
+    background-color: grey;
+}
+
+/* dropdown styling */
+.dropdown-menu {
+    border-radius: 8px;
+    overflow: hidden;
+    padding: 0;
+}
+
+.dropdown-menu .dropdown-item {
+    padding: 10px 16px;
+    border-radius: 0;
+}
+
+.dropdown-menu .dropdown-item:hover {
+    background-color: #f1f1f1;
+}
+
+
 
 .menu {
     font-size: 18px;

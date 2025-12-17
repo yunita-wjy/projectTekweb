@@ -1,0 +1,323 @@
+    :root {
+        --seat-size: 38px;
+        --seat-gap: 10px;
+        --aisle-gap: 40px;
+        --seat-radius: 8px;
+        --seat-font: 11px;
+        --bg-primary: #f8f9fa;
+        --bg-secondary: #e6e6e6;
+        --btn-primary: #4ecdc4;
+        --text-dark: #0a0a0a;
+        --seat-available: #e6e6e6;
+        --seat-booked: #dc3545;
+        --seat-selected: #4ecdc4;
+        --screen-color: #4ecdc4;
+    }
+
+    body {
+        font-family: Arial, sans-serif;
+        background: #f8f9fa;
+        color: var(--text-dark)
+    }
+
+    .container {
+        max-width: 900px;
+        margin: 40px auto;
+        padding: 20px;
+    }
+
+    /* SCREEN */
+    .screen-wrapper {
+        position: relative;
+        display: flex;
+        justify-content: center;
+        margin-bottom: 40px;
+    }
+
+    .screen {
+        height: 50px;
+        background: var(--screen-color);
+        clip-path: polygon(0 0, 100% 0, 97% 100%, 3% 100%);
+        border-radius: 6px;
+        width: min(100%, 900px);
+        box-shadow: 0 5px 15px rgba(10, 10, 10, 0.3);
+    }
+
+    .screen-text {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        color: #0a0a0a;
+        font-weight: bold;
+        font-size: 18px;
+    }
+
+    /* SEATING */
+    .seating {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        align-items: stretch;
+        min-width: max-content;
+    }
+
+    .row {
+        display: flex;
+        gap: var(--seat-gap);
+        justify-content: center;
+        width: 100%;
+        max-width: 1000px;
+    }
+
+    .gap {
+        width: var(--aisle-gap)
+    }
+
+    /* SEAT */
+    .seat {
+        width: var(--seat-size);
+        height: var(--seat-size);
+        border-radius: var(--seat-radius);
+        font-size: var(--seat-font);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .seat.spacer {
+        background: transparent;
+        pointer-events: none;
+    }
+
+    .seating-wrapper {
+        overflow-x: auto;
+        padding-bottom: 20px;
+    }
+
+    @media (max-width: 768px) {
+        :root {
+            --seat-size: 26px;
+            --seat-gap: 6px;
+            --aisle-gap: 20px;
+            --seat-font: 9px;
+        }
+    }
+
+    @media (max-width: 480px) {
+        :root {
+            --seat-size: 22px;
+            --seat-gap: 2px;
+            --aisle-gap: 15px;
+            --seat-font: 8px;
+        }
+    }
+
+
+    .available {
+        background: #e6e6e6;
+    }
+
+    .available:hover {
+        background: #ced4da;
+        cursor: pointer;
+    }
+
+    .seat.booked {
+        background: var(--seat-booked);
+        color: white;
+        cursor: not-allowed;
+    }
+    
+    .seat.selected:hover {
+        background: #38b2ac;
+        cursor: pointer;
+    }
+
+    .seat.selected {
+        background: var(--seat-selected);
+    }
+
+    /* LEGEND */
+    .legend {
+        display: flex;
+        gap: 30px;
+        justify-content: center;
+        margin: 40px 0;
+    }
+
+    .legend .seat {
+        margin-right: 6px;
+    }
+
+    .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .legend-color {
+        width: 20px;
+        height: 20px;
+        border-radius: 3px;
+    }
+
+    .legend-text {
+        font-size: 0.9rem;
+    }
+
+    /* selection */
+    .selection {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .actions {
+        display: flex;
+        gap: 16px;
+        margin-top: 10px;
+    }
+
+    .btn-clear {
+        padding: 3px 20px;
+        background: none;
+        border: 2px solid #0a0a0a;
+        border-radius: 10px;
+    }
+
+    .btn-continue {
+        padding: 3px 26px;
+        background: #4ecdc4;
+        border: none;
+        border-radius: 10px;
+    }
+
+    .btn-continue:hover {
+        background: #38b2ac;
+        color: white;
+        cursor: pointer;
+    }
+
+    .btn-clear:hover {
+        background: #0a0a0a;
+        color: white;
+        cursor: pointer;
+    }
+
+    .btn-continue:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+            color: white;
+        }
+
+    header {
+        background-color: transparent;
+        color: #0a0a0a;
+        height: 80px;
+        width: 100%;
+        /* position: fixed; */
+        top: 0;
+        z-index: 1000;
+        transition: background-color 0.4s ease, box-shadow 0.4s ease;
+    }
+
+    #main-header.scrolled {
+        background-color: #f8f9fa;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+    }
+
+    nav {
+        max-width: 1440px;
+        margin: 0 auto;
+        height: 100%;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0 40px;
+    }
+
+    nav .logo {
+        align-items: center;
+        display: inline-flex;
+        gap: 5px;
+        font-size: 24px;
+        font-weight: bold;
+    }
+
+    nav .logo img {
+        height: 60px;
+        width: 60px;
+    }
+
+    nav ul {
+        list-style: none;
+        display: flex;
+        gap: 25px;
+        margin-left: auto;
+    }
+
+    nav ul li a {
+        color: #0a0a0a;
+        text-decoration: none;
+        font-size: 17px;
+        transition: color;
+        height: 100%;
+    }
+
+    nav .akun a {
+        padding: 8px 16px;
+        border-radius: 5px;
+        text-decoration: none;
+        margin-left: 20px;
+    }
+
+    nav .akun a.login {
+        background-color: #4ecdc4;
+        color: black;
+    }
+
+    nav .akun a.login:hover {
+        background-color: #38b2ac;
+        color: white;
+    }
+
+    .profile-toggle {
+        padding: 8px 14px;
+        border-radius: 5px;
+        color: black;
+        text-decoration: none;
+    }
+
+    .profile-toggle:hover {
+        color: white;
+        background-color: grey;
+    }
+
+    /* dropdown styling */
+    .dropdown-menu {
+        border-radius: 8px;
+        overflow: hidden;
+        padding: 0;
+    }
+
+    .dropdown-menu .dropdown-item {
+        padding: 10px 16px;
+        border-radius: 0;
+    }
+
+    .dropdown-menu .dropdown-item:hover {
+        background-color: #f1f1f1;
+    }
+
+    .menu {
+        font-size: 18px;
+        gap: 24px;
+    }
+
+    .menu a:hover {
+        text-decoration: underline;
+        text-underline-offset: 5px;
+    }

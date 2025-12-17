@@ -79,18 +79,18 @@ window.addEventListener('scroll', function() {
 })(jQuery);
 
 
-function confirmDelete(id, href) {
+function confirmLogout(href) {
     swal({
-        title: "Yakin mau hapus?",
-        text: "Data yang sudah dihapus tidak bisa dikembalikan!",
+        title: "Yakin mau logout?",
+        text: "Anda akan keluar dari akun Anda!",
         type: "warning",
         showCancelButton: true,
         confirmButtonColor: "#d33",
-        confirmButtonText: "Ya, hapus!",
-        cancelButtonText: "Batal",
+        confirmButtonText: "logout",
+        cancelButtonText: "cancel",
         closeOnConfirm: false
     }, function() {
-        window.location.href = href + id;
+        window.location.href = href;
     });
 }
 

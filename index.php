@@ -1,11 +1,11 @@
 <?php
-    session_start();
+session_start();
 
-    if (isset($_SESSION['user'])) {
-        $user = $_SESSION['user'];
-    } else {
-        $user = null;
-    }
+if (isset($_SESSION['user'])) {
+    $user = $_SESSION['user'];
+} else {
+    $user = null;
+}
 ?>
 
 <!DOCTYPE html>
@@ -14,13 +14,13 @@
 <head>
     <meta charset="UTF-8" />
     <title>Film Verse</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- favicon -->
     <link href="assets/filmVerse-light.png" rel="icon" media="(prefers-color-scheme: light)" />
     <link href="assets/filmVerse-dark.png" rel="icon" media="(prefers-color-scheme: dark)" />
     <!-- Bootstrap & style -->
-    <!-- <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script> -->
-    <!-- <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"> -->
-    <link rel="stylesheet" href="style.css?v=2"/>   
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="style.css?v=2" />
     <!-- sweet alert -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/sweetalert/1.1.3/sweetalert.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/sweetalert/1.1.3/sweetalert.min.js"></script>
@@ -30,6 +30,7 @@
 </head>
 
 <body>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <header id="main-header">
         <nav>
             <div class="logo">
@@ -39,12 +40,57 @@
             <ul class="menu">
                 <li><a href="#hero">Home</a></li>
                 <li><a href="#films">Movies</a></li>
-                <li><a href="#series">Series</a></li>
-                <li><a href="#genre">Genre</a></li>
             </ul>
             <div class="akun">
-                <a href="customer/loginUI.php">Login</a>
+                <?php if ($user): ?>
+                    <div class="dropdown">
+                        <a href="#"
+                            class="dropdown-toggle profile-toggle"
+                            data-bs-toggle="dropdown"
+                            aria-expanded="false">
+                             <i class="fa-regular fa-user me-2"></i>
+                            Hi, <strong><?= htmlspecialchars($user['username']) ?></strong>
+                        </a>
+
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li>
+                                <a class="dropdown-item" href="customer/profile.php">
+                                    <i class="fa-regular fa-user me-2"></i> Profile
+                                </a>
+                            </li>
+                            <li>
+                                <hr class="dropdown-divider">
+                            </li>
+                            <li>
+                                <a class="dropdown-item text-danger"
+                                    onclick="confirmLogout('auth/logout.php')">
+                                    <i class="fa-solid fa-right-from-bracket me-2"></i> Logout
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                <?php else: ?>
+                    <a href="customer/loginUI.php" class="login">Login</a>
+                <?php endif; ?>
             </div>
+
+            <?php if (isset($_GET['logout']) && $_GET['logout'] === 'success'): ?>
+                <script>
+                    $(document).ready(function() {
+                        showSwal(
+                            'success',
+                            'Success!',
+                            'Anda berhasil logout!',
+                            function() {
+                                window.history.replaceState({},
+                                    document.title,
+                                    'index.php'
+                                );
+                            }
+                        );
+                    });
+                </script>
+            <?php endif; ?>
         </nav>
     </header>
     <section id="hero">
@@ -147,4 +193,5 @@
     </footer>
     <script src="script.js"></script>
 </body>
+
 </html>
