@@ -1,25 +1,12 @@
 <?php
+session_start();
+require "../config/connection.php"; // pastikan $conn = new mysqli(...)
 
-require "../config/connection.php"; 
-require "../includes/admin_auth.php";
 // Simple auth guard (aktifkan sesuai project mu)
 // if(!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'admin'){
 //     header("Location: ../auth/login.php");
 //     exit();
 //}
-
-// // SIMULASI LOGIN ADMIN (SEMENTARA TANPA LOGIN PAGE)
-// if (!isset($_SESSION['user'])) {
-//     $q = $conn->query("SELECT user_id, username, full_name, email, role 
-//                        FROM users 
-//                        WHERE role = 'admin' 
-//                        LIMIT 1");
-//     $admin = $q->fetch_assoc();
-
-//     if ($admin) {
-//         $_SESSION['user'] = $admin;
-//     }
-// }
 
 // helpers: flash messages
 function flash($type, $msg) {
@@ -342,16 +329,13 @@ $res2->free();
 <head>
     <meta charset="utf-8">
     <title>Manage Movies - Admin</title>
-    <!-- Bootstrap -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <style>
         :root{ --accent: #4ecdc4; }
         body { background: #f8f9fb; }
         .sidebar { width: 220px; min-height:100vh; background: #111827; color:#fff; }
         .sidebar a { color: #fff; text-decoration:none; }
         .sidebar .nav-link.active { background: rgba(255,255,255,0.06); font-weight:700; color:var(--accent); }
-        .sidebar .nav-link:not(.active):hover { color: #ff4c29; }
         .card-title.bg-primary { background:#0d6efd !important; } /* keep bootstrap */
         .poster-thumb { width: 60px; height: 80px; object-fit:cover; border-radius:4px; }
         .required { color: #dc3545; }
@@ -364,17 +348,16 @@ $res2->free();
     <div class="sidebar p-3 d-none d-md-block">
         <div class="d-flex align-items-center mb-4">
             <img src="../assets/filmVerse-dark.png" width="44" class="me-2">
-            <div><strong>FilmVerse</strong>
-            <div style="font-size:12px; color:#9CA3AF">Admin Panel</div></div>
+            <div><strong>FilmVerse</strong><div style="font-size:12px; color:#9CA3AF">Admin Panel</div></div>
         </div>
         <nav class="nav flex-column">
-            <a class="nav-link mb-1" href="dashboard.php">Dashboard</a>
-            <a class="nav-link mb-1 active" href="manage_movies.php">Manage Movies</a>
-            <a class="nav-link mb-1" href="manage_showtimes.php">Manage Showtimes</a>
-            <a class="nav-link mb-1" href="manage_studios.php">Manage Studios</a>
-            <a class="nav-link mb-1" href="manage_prices.php">Manage Prices</a>
-            <a class="nav-link mb-1" href="manage_users.php">Manage Users</a>
-            <a class="nav-link mb-1" href="transactions.php">Transactions</a>
+            <a class="nav-link mb-1" href="#">Dashboard</a>
+            <a class="nav-link mb-1 active" href="#">Manage Movies</a>
+            <a class="nav-link mb-1" href="#">Manage Showtimes</a>
+            <a class="nav-link mb-1" href="#">Manage Studios</a>
+            <a class="nav-link mb-1" href="#">Manage Prices</a>
+            <a class="nav-link mb-1" href="#">Manage Users</a>
+            <a class="nav-link mb-1" href="#">Transactions</a>
         </nav>
     </div>
 
@@ -386,19 +369,19 @@ $res2->free();
         </div>
         <div class="offcanvas-body p-3">
             <nav class="nav flex-column">
-                <a class="nav-link text-white" href="dashboard.php">Dashboard</a>
-                <a class="nav-link text-white fw-bold" href="manage_movies.php">Manage Movies</a>
-                <a class="nav-link text-white" href="manage_showtimes.php">Manage Showtimes</a>
-                <a class="nav-link text-white" href="manage_studios.php">Manage Studios</a>
-                <a class="nav-link text-white" href="manage_prices.php">Manage Prices</a>
-                <a class="nav-link text-white" href="manage_users.php">Manage Users</a>
-                <a class="nav-link text-white" href="transactions.php">Transactions</a>
+                <a class="nav-link text-white" href="#">Dashboard</a>
+                <a class="nav-link text-white fw-bold" href="#">Manage Movies</a>
+                <a class="nav-link text-white" href="#">Manage Showtimes</a>
+                <a class="nav-link text-white" href="#">Manage Studios</a>
+                <a class="nav-link text-white" href="#">Manage Prices</a>
+                <a class="nav-link text-white" href="#">Manage Users</a>
+                <a class="nav-link text-white" href="#">Transactions</a>
             </nav>
         </div>
     </div>
 
 
-    <!-- NAVBAR & CONTENT -->
+    <!-- CONTENT -->
     <div class="flex-grow-1">
         <!-- NAVBAR -->
         <nav class="navbar navbar-dark bg-dark px-4">
@@ -411,16 +394,13 @@ $res2->free();
                         <span class="navbar-toggler-icon"></span>
                     </button>
                     
-                    <span class="navbar-brand ms-2 fw-bold">Admin - Manage Movies</span>
+                    <span class="navbar-brand ms-2">Admin - Manage Movies</span>
                 </div>
 
                 <div class="d-flex align-items-center">
-                    <span class="text-white me-4 fw-bold">ADMIN</span>
+                    <span class="text-white me-3">ADMIN</span>
                     <div class="dropdown me-2">
-                        <button class="btn btn-outline-light btn-sm dropdown-toggle text-uppercase"
-                                data-bs-toggle="dropdown">
-                            <?= htmlspecialchars($_SESSION['user']['full_name']) ?>
-                        </button>                        
+                        <button class="btn btn-outline-light btn-sm dropdown-toggle" data-bs-toggle="dropdown" type="button"><?= htmlspecialchars($_SESSION['user']['full_name'] ?? 'SARAH') ?></button>
                         <ul class="dropdown-menu dropdown-menu-end">
                             <li><a class="dropdown-item text-danger" href="../auth/logout.php">Logout</a></li>
                         </ul>
@@ -429,7 +409,6 @@ $res2->free();
             </div>
         </nav>
 
-        <!-- CONTENT -->
         <div class="container-fluid p-4">
 
             <?php if ($flash): ?>
@@ -442,6 +421,7 @@ $res2->free();
                     <h5 class="mb-0">List of Movies</h5>
                     <form class="d-flex">
                         <input id="searchTitle" class="form-control form-control-sm me-2" placeholder="Search Title...">
+                        <button class="btn btn-outline-primary btn-sm" type="button" >Search</button>
                     </form>
                 </div>
                 <div class="card-body p-0">
@@ -460,7 +440,7 @@ $res2->free();
                                     <th>Action</th>
                                 </tr>
                             </thead>
-                            <tbody id="movieTableBody">
+                            <tbody>
                                 <?php if(empty($movies)): ?>
                                     <tr><td colspan="9" class="text-center py-4">No movies yet.</td></tr>
                                 <?php else: foreach($movies as $i => $m): ?>
@@ -491,7 +471,7 @@ $res2->free();
                                             <div class="d-flex flex-column gap-2">
                                                 <!-- Edit form -->
                                                 <button type="button" 
-                                                    class="btn btn-sm btn-warning btn-edit-movie"
+                                                    class="btn btn-sm btn-outline-primary btn-edit-movie"
                                                     data-movie='<?= htmlspecialchars(json_encode([
                                                         "id" => $m["movie_id"],
                                                         "title" => $m["title"],
@@ -509,7 +489,7 @@ $res2->free();
                                                 <form method="POST" class="d-inline" onsubmit="return confirm('Hapus movie ini?');">
                                                     <input type="hidden" name="action" value="delete_movie">
                                                     <input type="hidden" name="movie_id" value="<?= $m['movie_id'] ?>">
-                                                    <button class="btn btn-sm btn-danger w-100" type="submit">Delete</button>
+                                                    <button class="btn btn-sm btn-outline-danger w-100" type="submit">Delete</button>
                                                 </form>
                                             </div>
                                         </td>
@@ -525,7 +505,7 @@ $res2->free();
             <div class="row g-3">
                 <div class="col-lg-7">
                     <div class="card shadow-sm">
-                        <div class="card-header bg-primary text-white fw-bold">
+                        <div class="card-header bg-primary text-white">
                             Add Movie
                         </div>
                         <div class="card-body">
@@ -600,7 +580,7 @@ $res2->free();
                 <!-- Manage genres side -->
                 <div class="col-lg-5">
                     <div class="card shadow-sm">
-                        <div class="card-header bg-secondary text-white fw-bold">
+                        <div class="card-header bg-secondary text-white">
                             Manage Genres
                         </div>
                         <div class="card-body">
@@ -688,33 +668,30 @@ $res2->free();
 </div>
 
 <script>
-    // Search Movie 
+
+    // FILTER MOVIE (SEARCH TITLE)
     const searchInput = document.getElementById("searchTitle");
-    const tbody = document.getElementById("movieTableBody");
+    const searchButton = document.getElementById("btnSearch");
 
-    let timer = null;
+    function filterMovies() {
+        const q = searchInput.value.toLowerCase();
+        const tableRows = document.querySelectorAll("table tbody tr");
 
-    searchInput.addEventListener("keyup", function () {
-        clearTimeout(timer);
+        tableRows.forEach(tr => {
+            // skip row kosong
+            if(tr.children.length < 2) return;
 
-        timer = setTimeout(() => {
-            const q = this.value;
+            const titleCell = tr.children[2].textContent.toLowerCase(); // kolom Title
+            if(titleCell.includes(q)) tr.style.display = "";
+            else tr.style.display = "none";
+        });
+    }
 
-            fetch(`ajax/search_movies.php?q=${encodeURIComponent(q)}`)
-                .then(res => res.text())
-                .then(html => {
-                    tbody.innerHTML = html || `
-                        <tr>
-                            <td colspan="9" class="text-center text-muted py-4">
-                                Movie not found
-                            </td>
-                        </tr>`;
-                });
-        }, 300); // debounce
-    });
+    // live filter saat mengetik
+    searchInput.addEventListener("input", filterMovies);
 
-
-    
+    // tombol juga bisa digunakan
+    searchButton.addEventListener("click", filterMovies);
 
 
     function createGenreSelect() {
@@ -924,6 +901,6 @@ $res2->free();
 
 </script>
 
-
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
