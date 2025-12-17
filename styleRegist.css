@@ -127,7 +127,8 @@ body {
 @media (min-width: 576px) {
     .login-box {
         padding: 2.5rem;
-        max-width: 450px;
+        /* max-width: 450px; */
+        width: 65%;
     }
 
     .company-name {
@@ -138,6 +139,6 @@ body {
 @media (max-width: 1200px) and (min-width: 769px) {
     .login-box {
         padding: 2.5rem;
-        max-width: 750px;
+        width: 75%;
     }
 }

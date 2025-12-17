@@ -43,16 +43,18 @@
                         <i class="far fa-eye"></i>
                     </button>
                 </div>
-                <div id="passwordError" class="error-message d-none">Password minimal 6 karakter</div>
             </div>
 
             <!-- Login Button -->
-            <button type="submit" class="btn btn-login mb-3">Login</button>
+            <button type="submit" class="btn btn-login mb-3" name="login">Login</button>
 
             <!-- Error Message (akan muncul jika login gagal) -->
-            <div id="loginError" class="alert alert-danger d-none text-center" role="alert">
-                Email atau password salah. Silakan coba lagi.
-            </div>
+            <?php if (isset($_GET['msg']) && $_GET['msg'] === 'failed'): ?>
+                <p class="text-danger text-right mt-1 small">
+                    Login gagal! Email atau password salah.
+                </p>
+            <?php endif; ?>
+
         </form>
 
         <!-- Register Link -->
@@ -60,7 +62,7 @@
             Tidak punya akun? <a href="signupUI.php">Daftar di sini</a>
         </div>
         <div class="text-center">
-            <a href="../index.php">Back</a> 
+            <a href="../index.php">Back</a>
         </div>
     </div>
 

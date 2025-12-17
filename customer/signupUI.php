@@ -15,11 +15,11 @@
 <body>
     <div class="login-box">
         <!-- Logo -->
-        <div class="logo-container mb-3">
+        <div class="logo-container mb-3 align-items-center">
             <div class="logo-icon">
                 <i class="fas fa-film"></i>
+                <h1 class="company-name">FilmVerse</h1>
             </div>
-            <h1 class="company-name">FilmVerse</h1>
         </div>
 
         <!-- Judul  -->
@@ -27,7 +27,7 @@
         <a>Hello! New in here? </a>
 
         <!-- Form signUp -->
-        <form id="signupForm" action="../auth/signup.php" method="POST">
+        <form id="signupForm" action="../auth/register.php" method="POST">
             <!-- Username Input -->
             <div class="mb-2">
                 <label for="username" class="form-label">Username</label>
@@ -59,7 +59,7 @@
                     <input type="password" class="form-control" id="password" name="password" placeholder="Masukkan password" required>
                     <button type="button" class="password-toggle" id="togglePassword">
                     </button>
-                        <i class="far fa-eye"></i>
+                    <i class="far fa-eye"></i>
                 </div>
                 <div id="passwordError" class="error-message d-none">Password minimal 6 karakter</div>
             </div>
@@ -70,18 +70,20 @@
                     <input type="password" class="form-control" id="confirmPassword" name="confirmPassword" placeholder="Masukkan password lagi" required>
                     <button type="button" class="password-toggle" id="toggleConfirmPassword">
                     </button>
-                        <i class="far fa-eye"></i>
+                    <i class="far fa-eye"></i>
                 </div>
                 <div id="confirmPasswordError" class="error-message d-none">Password tidak sesuai</div>
             </div>
 
             <!-- SignUp Button -->
-            <button type="submit" class="btn btn-login mb-3">Sign Up</button>
+            <button type="submit" class="btn btn-login mb-3" name="register">Sign Up</button>
 
-            <!-- Error Message (akan muncul jika login gagal) -->
-            <div id="signUpError" class="alert alert-danger d-none text-center" role="alert">
-                Password tidak sesuai. Silakan coba lagi.
-            </div>
+            <!-- Success Message (akan muncul jika register berhasil) -->
+            <?php if (isset($_GET['signup']) && $_GET['signup'] === 'success'): ?>
+                <div id="signUpSuccess" class="alert alert-success alert-dismissible fade show" role="alert">
+                    Pendaftaran berhasil! Silakan login.
+                </div>
+            <?php endif; ?>
         </form>
 
         <!-- Register Link -->
