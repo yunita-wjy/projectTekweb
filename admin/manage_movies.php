@@ -1,25 +1,25 @@
 <?php
-session_start();
-require "../config/connection.php"; // pastikan $conn = new mysqli(...)
 
+require "../config/connection.php"; 
+require "../includes/admin_auth.php";
 // Simple auth guard (aktifkan sesuai project mu)
 // if(!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'admin'){
 //     header("Location: ../auth/login.php");
 //     exit();
 //}
 
-// SIMULASI LOGIN ADMIN (sementara, tanpa login page)
-if (!isset($_SESSION['user'])) {
-    $q = $conn->query("SELECT user_id, username, full_name, email, role 
-                       FROM users 
-                       WHERE role = 'admin' 
-                       LIMIT 1");
-    $admin = $q->fetch_assoc();
+// // SIMULASI LOGIN ADMIN (SEMENTARA TANPA LOGIN PAGE)
+// if (!isset($_SESSION['user'])) {
+//     $q = $conn->query("SELECT user_id, username, full_name, email, role 
+//                        FROM users 
+//                        WHERE role = 'admin' 
+//                        LIMIT 1");
+//     $admin = $q->fetch_assoc();
 
-    if ($admin) {
-        $_SESSION['user'] = $admin;
-    }
-}
+//     if ($admin) {
+//         $_SESSION['user'] = $admin;
+//     }
+// }
 
 // helpers: flash messages
 function flash($type, $msg) {
@@ -442,7 +442,6 @@ $res2->free();
                     <h5 class="mb-0">List of Movies</h5>
                     <form class="d-flex">
                         <input id="searchTitle" class="form-control form-control-sm me-2" placeholder="Search Title...">
-                        <button id="btnSearch" class="btn btn-outline-primary btn-sm" type="button" >Search</button>
                     </form>
                 </div>
                 <div class="card-body p-0">
@@ -461,7 +460,7 @@ $res2->free();
                                     <th>Action</th>
                                 </tr>
                             </thead>
-                            <tbody>
+                            <tbody id="movieTableBody">
                                 <?php if(empty($movies)): ?>
                                     <tr><td colspan="9" class="text-center py-4">No movies yet.</td></tr>
                                 <?php else: foreach($movies as $i => $m): ?>
@@ -689,30 +688,33 @@ $res2->free();
 </div>
 
 <script>
-
-    // FILTER MOVIE (SEARCH TITLE)
+    // Search Movie 
     const searchInput = document.getElementById("searchTitle");
-    const searchButton = document.getElementById("btnSearch");
+    const tbody = document.getElementById("movieTableBody");
 
-    function filterMovies() {
-        const q = searchInput.value.toLowerCase();
-        const tableRows = document.querySelectorAll("table tbody tr");
+    let timer = null;
 
-        tableRows.forEach(tr => {
-            // skip row kosong
-            if(tr.children.length < 2) return;
+    searchInput.addEventListener("keyup", function () {
+        clearTimeout(timer);
 
-            const titleCell = tr.children[2].textContent.toLowerCase(); // kolom Title
-            if(titleCell.includes(q)) tr.style.display = "";
-            else tr.style.display = "none";
-        });
-    }
+        timer = setTimeout(() => {
+            const q = this.value;
 
-    // live filter saat mengetik
-    searchInput.addEventListener("input", filterMovies);
+            fetch(`ajax/search_movies.php?q=${encodeURIComponent(q)}`)
+                .then(res => res.text())
+                .then(html => {
+                    tbody.innerHTML = html || `
+                        <tr>
+                            <td colspan="9" class="text-center text-muted py-4">
+                                Movie not found
+                            </td>
+                        </tr>`;
+                });
+        }, 300); // debounce
+    });
 
-    // tombol juga bisa digunakan
-    searchButton.addEventListener("click", filterMovies);
+
+    
 
 
     function createGenreSelect() {

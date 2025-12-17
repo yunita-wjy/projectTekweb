@@ -1,23 +1,23 @@
 <?php
-    session_start();
+    
     require "../config/connection.php";
-    // require "../includes/admin_auth.php";
+    require "../includes/admin_auth.php";
     // if(!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'admin'){
     //     header("Location: ../auth/login.php");
     //     exit();
     // }
 
-    // AMBIL DATA TABLE 
-    // $query = "SELECT * FROM transactions ORDER BY date DESC, time DESC LIMIT 5";
-    // $result = mysqli_query($conn, $query);
+    // SIMULASI LOGIN ADMIN (sementara, tanpa login page)
+    // if (!isset($_SESSION['user'])) {
+    //     $q = $conn->query("SELECT user_id, username, full_name, email, role 
+    //                     FROM users 
+    //                     WHERE role = 'admin' 
+    //                     LIMIT 1");
+    //     $admin = $q->fetch_assoc();
 
-    // // helpers: flash messages
-    // function flash($type, $msg) {
-    //     $_SESSION['flash'] = ['type'=>$type, 'msg'=>$msg];
-    // }
-    // function get_flash() {
-    //     if(isset($_SESSION['flash'])) { $f = $_SESSION['flash']; unset($_SESSION['flash']); return $f; }
-    //     return null;
+    //     if ($admin) {
+    //         $_SESSION['user'] = $admin;
+    //     }
     // }
 
     /* ================= DASHBOARD DATA ================= */
@@ -27,7 +27,7 @@
         SELECT COUNT(DISTINCT m.movie_id) total
         FROM movies m
         JOIN showtimes s ON m.movie_id = s.movie_id
-        WHERE m.status = 'NOW_SHOWING'
+        WHERE m.status = 'active'
         AND s.show_date = CURDATE()
     ");
     $moviesNowShowing = $q->fetch_assoc()['total'] ?? 0;
@@ -203,29 +203,29 @@
 
                 <div class="d-flex justify-content-center gap-5 flex-wrap">
                     <div class="card shadow-sm text-center" style="width: 300px; height: 200px;">
-                        <div class="card-body d-flex flex-column justify-content-center align-items-center">
+                        <div class="card-body d-flex flex-column justify-content-center align-items-center bg-info text-white">
                             <h2 class="fw-bold mb-4" style="font-size: 40px">
                                 <?= $moviesNowShowing ?>
                             </h2>
-                            <p class="mb-0 text-muted" style="font-size: 20px;">MOVIES NOW SHOWING</p>
+                            <p class="mb-0 text-white" style="font-size: 20px;">MOVIES NOW SHOWING</p>
                         </div>
                     </div>
 
                     <div class="card shadow-sm text-center" style="width: 300px; height: 200px;">
-                        <div class="card-body d-flex flex-column justify-content-center align-items-center">
+                        <div class="card-body d-flex flex-column justify-content-center align-items-center bg-info text-white">
                             <h2 class="fw-bold mb-4" style="font-size: 40px">
                                 <?= $showtimesToday ?>
                             </h2>
-                            <p class="mb-0 text-muted"  style="font-size: 20px;">SHOWTIMES TODAY</p>
+                            <p class="mb-0 text-white"  style="font-size: 20px;">SHOWTIMES TODAY</p>
                         </div>
                     </div>
 
                     <div class="card shadow-sm text-center" style="width: 300px; height: 200px;">
-                        <div class="card-body d-flex flex-column justify-content-center align-items-center">
+                        <div class="card-body d-flex flex-column justify-content-center align-items-center bg-info text-white">
                             <h2 class="fw-bold mb-4" style="font-size: 40px">
                                 <?= $ticketsSoldToday ?>
                             </h2>
-                            <p class="mb-0 text-muted"  style="font-size: 20px;" >TICKETS SOLD TODAY</p>
+                            <p class="mb-0  text-white"  style="font-size: 20px;" >TICKETS SOLD TODAY</p>
                         </div>
                     </div>
                 </div>

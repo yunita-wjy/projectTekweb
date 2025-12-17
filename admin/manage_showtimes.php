@@ -1,6 +1,6 @@
 <?php
-    session_start();
     require "../config/connection.php";
+    require "../includes/admin_auth.php"; 
     // require "../includes/admin_auth.php";
     
     // if(!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'admin'){
@@ -8,14 +8,36 @@
     //     exit();
     // }
 
-    // // helpers: flash messages
-    // function flash($type, $msg) {
-    //     $_SESSION['flash'] = ['type'=>$type, 'msg'=>$msg];
+    // SIMULASI LOGIN ADMIN (sementara, tanpa login page)
+    // if (!isset($_SESSION['user'])) {
+    //     $q = $conn->query("SELECT user_id, username, full_name, email, role 
+    //                     FROM users 
+    //                     WHERE role = 'admin' 
+    //                     LIMIT 1");
+    //     $admin = $q->fetch_assoc();
+
+    //     if ($admin) {
+    //         $_SESSION['user'] = $admin;
+    //     }
     // }
-    // function get_flash() {
-    //     if(isset($_SESSION['flash'])) { $f = $_SESSION['flash']; unset($_SESSION['flash']); return $f; }
-    //     return null;
-    // }
+
+    // flash helper
+    function set_flash($type, $msg) {
+        $_SESSION['flash'] = [
+            'type' => $type,
+            'msg'  => $msg
+        ];
+    }
+
+    function get_flash() {
+        if (isset($_SESSION['flash'])) {
+            $f = $_SESSION['flash'];
+            unset($_SESSION['flash']);
+            return $f;
+        }
+        return null;
+    }
+
 
     /*==== TABLE LIST SHOWTIMES ====*/
     $showtimes = $conn->query("
@@ -36,6 +58,20 @@
         JOIN prices p
         ORDER BY s.show_date DESC
     ");
+
+    // MOVIES untuk dropdown
+    $movies = $conn->query("
+        SELECT movie_id, title, duration, start_date
+        FROM movies
+        WHERE status IN ('ACTIVE','COMING_SOON')
+    ")->fetch_all(MYSQLI_ASSOC);
+
+    // STUDIOS untuk dropdown
+    $studios = $conn->query("
+        SELECT studio_id, studio_name
+        FROM studios
+        WHERE status = 'active'
+    ")->fetch_all(MYSQLI_ASSOC);
 
     // DELETE SHOWTIME
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_id'])) {
@@ -59,49 +95,60 @@
         $id = (int) $_GET['edit_id'];
 
         $stmt = $conn->prepare("
-            SELECT s.*, m.duration 
+            SELECT 
+                s.*, 
+                m.duration,
+                CASE 
+                    WHEN DAYOFWEEK(s.show_date) IN (1,7)
+                    THEN p.weekend_price
+                    ELSE p.weekday_price
+                END AS price
             FROM showtimes s
             JOIN movies m ON s.movie_id = m.movie_id
+            JOIN prices p
             WHERE s.showtime_id = ?
         ");
+
         $stmt->bind_param("i", $id);
         $stmt->execute();
         $editData = $stmt->get_result()->fetch_assoc();
     }
 
 
-    /*==== FORM ADD SHOWTIMES ====*/
-    // AMBIL DATA MOVIES (DROPDOWN): Movies aktif & coming soon
-    $movies = $conn->query("
-        SELECT movie_id, title, duration, start_date, status 
-        FROM movies 
-        WHERE status IN ('ACTIVE','COMING_SOON')
-    ")->fetch_all(MYSQLI_ASSOC);
+    /* =========================
+    ADD / UPDATE SHOWTIME
+    ========================= */
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && (isset($_POST['add']) || isset($_POST['update']))) {
 
-    // AMBIL DATA STUDIOS
-    $studios = $conn->query("
-        SELECT studio_id, studio_name 
-        FROM studios
-        WHERE status = 'active';
-    ")->fetch_all(MYSQLI_ASSOC);
+        if (
+            empty($_POST['movie_id']) ||
+            empty($_POST['studio_id']) ||
+            empty($_POST['showing_date']) ||
+            empty($_POST['start_time'])
+        ) {
+            set_flash('danger', 'Semua field wajib diisi.');
+            header("Location: manage_showtimes.php");
+            exit;
+        }
 
-    // AMBIL DATA PRICES: price untuk weekday dan weekend
-    $studios = $conn->query("
-        SELECT studio_id, studio_name 
-        FROM studios
-    ")->fetch_all(MYSQLI_ASSOC);
-
-    // ADD SHOWTIME
-    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-
-        $movie_id   = $_POST['movie_id'];
-        $studio_id  = $_POST['studio_id'];
+        $movie_id   = (int) $_POST['movie_id'];
+        $studio_id  = (int) $_POST['studio_id'];
         $show_date  = $_POST['showing_date'];
         $start_time = $_POST['start_time'];
 
         // ambil durasi
-        $movie = $conn->query("SELECT duration FROM movies WHERE movie_id = $movie_id")->fetch_assoc();
-        $duration = $movie['duration'];
+        $stmt = $conn->prepare("SELECT duration FROM movies WHERE movie_id = ?");
+        $stmt->bind_param("i", $movie_id);
+        $stmt->execute();
+        $movie = $stmt->get_result()->fetch_assoc();
+
+        if (!$movie) {
+            set_flash('danger', 'Movie tidak valid.');
+            header("Location: manage_showtimes.php");
+            exit;
+        }
+
+        $duration = (int)$movie['duration'];
 
         // hitung end_time
         $startDT = new DateTime("$show_date $start_time");
@@ -109,39 +156,98 @@
         $endDT->modify("+$duration minutes");
         $end_time = $endDT->format("H:i:s");
 
-        // MODE UPDATE
+        $ignore_id = isset($_POST['update']) ? (int)$_POST['showtime_id'] : 0;
+
+        // ===== CEK BENTROK =====
+        $sql = "
+            SELECT COUNT(*) AS total
+            FROM showtimes s
+            JOIN movies m ON s.movie_id = m.movie_id
+            WHERE s.studio_id = ?
+            AND s.show_date = ?
+            AND (
+                ? < ADDTIME(s.start_time, SEC_TO_TIME(m.duration * 60))
+                AND
+                ? > s.start_time
+            )
+        ";
+
         if (isset($_POST['update'])) {
-            $id = $_POST['showtime_id'];
+            $sql .= " AND s.showtime_id != ?";
+        }
 
-            $stmt = $conn->prepare("
-                UPDATE showtimes 
-                SET movie_id=?, studio_id=?, show_date=?, start_time=?, end_time=?
-                WHERE showtime_id=?
-            ");
-            $stmt->bind_param("iisssi",
-                $movie_id, $studio_id, $show_date, $start_time, $end_time, $id
+        $stmt = $conn->prepare($sql);
+
+        if (isset($_POST['update'])) {
+            $stmt->bind_param("isssi",
+                $studio_id,
+                $show_date,
+                $start_time,
+                $end_time,
+                $ignore_id
             );
-            $stmt->execute();
+        } else {
+            $stmt->bind_param("isss",
+                $studio_id,
+                $show_date,
+                $start_time,
+                $end_time
+            );
+        }
 
+        $stmt->execute();
+        $check = $stmt->get_result()->fetch_assoc();
+
+        if ($check['total'] > 0) {
+            set_flash('danger', 'Studio sudah digunakan pada jam tersebut.');
             header("Location: manage_showtimes.php");
             exit;
         }
 
-        // MODE ADD
+        // ===== UPDATE =====
+        if (isset($_POST['update'])) {
+            $id = (int)$_POST['showtime_id'];
+
+            $stmt = $conn->prepare("
+                UPDATE showtimes
+                SET movie_id=?, studio_id=?, show_date=?, start_time=?, end_time=?
+                WHERE showtime_id=?
+            ");
+            $stmt->bind_param("iisssi",
+                $movie_id,
+                $studio_id,
+                $show_date,
+                $start_time,
+                $end_time,
+                $id
+            );
+            $stmt->execute();
+
+            set_flash('success', 'Showtime berhasil diperbarui.');
+        }
+
+        // ===== ADD =====
         if (isset($_POST['add'])) {
             $stmt = $conn->prepare("
                 INSERT INTO showtimes (movie_id, studio_id, show_date, start_time, end_time)
                 VALUES (?, ?, ?, ?, ?)
             ");
             $stmt->bind_param("iisss",
-                $movie_id, $studio_id, $show_date, $start_time, $end_time
+                $movie_id,
+                $studio_id,
+                $show_date,
+                $start_time,
+                $end_time
             );
             $stmt->execute();
 
-            header("Location: manage_showtimes.php");
-            exit;
+            set_flash('success', 'Showtime berhasil ditambahkan.');
         }
+
+        header("Location: manage_showtimes.php");
+        exit;
     }
+
 
 
 
@@ -256,7 +362,6 @@
                             <h5 class="mb-0 fw-bold">LIST OF SHOWTIMES</h5>
                             <form class="d-flex">
                                 <input id="searchTitle" class="form-control form-control-sm me-2" placeholder="Search Showtimes Movie..." style="width: 200px;">
-                                <button id="btnSearch" class="btn btn-outline-primary btn-sm" type="button" >Search</button>
                             </form>
                         </div>
                         <div class="card-body p-0">
@@ -274,7 +379,7 @@
                                             <th>Action</th> <!--edit/delete-->
                                         </tr>
                                     </thead>
-                                        <tbody>
+                                        <tbody id="showtimesBody">
                                         <?php $no=1; while($row = $showtimes->fetch_assoc()): ?>
                                         <tr>
                                             <td><?= $no++ ?></td>
@@ -285,7 +390,7 @@
                                             <td><?= substr($row['end_time'],0,5) ?></td>
                                             <td><?= number_format($row['price']) ?></td>
                                             <td>
-                                                <a href="manage_showtimes.php?id=<?= $row['showtime_id'] ?>" 
+                                                <a href="manage_showtimes.php?edit_id=<?= $row['showtime_id'] ?>" 
                                                    class="btn btn-warning btn-sm">
                                                     Edit
                                                 </a>
@@ -317,8 +422,13 @@
                     <div class="card mt-4 mb-4 shadow-sm" style="width: 100%; ">
                         <!-- card header -->
                         <div class="card-header bg-primary text-white fw-bold">
-                            Add Showtimes
+                            <?= $editMode ? 'Edit Showtime' : 'Add Showtime'?>
                         </div>
+                        <?php if ($flash = get_flash()): ?>
+                            <div class="alert m-3 alert-<?= $flash['type'] ?>">
+                                <?= $flash['msg'] ?>
+                            </div>
+                        <?php endif; ?>
                         <!-- card body -->
                         <div class="card-body px-4">
                             <form method="POST" id="addShowtimeForm">
@@ -328,10 +438,10 @@
                                 <?php endif; ?>
 
                                 <div class="row align-items-center mb-3 mt-1">
-                                    <label for="movie" class="col-sm-3 col-form-label">MOVIE</label>
+                                    <label for="movie" class="col-sm-3 col-form-label">Movie Title</label>
                                     <div class="col-sm-9">
                                         <select id="movieSelect" name="movie_id" class="form-select">
-                                            <option value="" disabled selected>Pilih Movie</option>
+                                            <option value="">Pilih Movie</option>
                                             <?php foreach($movies as $m): ?>
                                             <option value="<?= $m['movie_id'] ?>"
                                                 <?= ($editMode && $editData['movie_id'] == $m['movie_id']) ? 'selected' : '' ?>
@@ -346,13 +456,13 @@
                                 <div class="row align-items-center mb-3 mt-1">
                                     <label for="showing-date" class="col-sm-3 col-form-label">Date</label>
                                     <div class="col-sm-9">
-                                        <input type="date" class="form-control" name="showing_date" value="<?= $editMode ? $editData['show_date'] : '' ?>">
+                                        <input type="date" class="form-control" name="showing_date" id="showing-date" value="<?= $editMode ? $editData['show_date'] : '' ?>">
                                     </div>
                                 </div>
                                 <div class="row align-items-center mb-3 mt-3">
-                                    <label for="showtime-time" class="col-sm-3 col-form-label">Showtime</label>
+                                    <label for="showtime-time" class="col-sm-3 col-form-label">Start time</label>
                                     <div class="col-sm-9">
-                                        <input type="time" class="form-control" name="start_time" value="<?= $editMode ? substr($editData['start_time'],0,5) : '' ?>">
+                                        <input type="time" class="form-control" name="start_time" id="showtime-time" value="<?= $editMode ? substr($editData['start_time'],0,5) : '' ?>">
                                     </div>
                                 </div>
                                 <div class="row align-items-center mb-3 mt-3">
@@ -364,8 +474,8 @@
                                 <div class="row align-items-center mb-3 mt-3">
                                     <label for="genre" class="col-sm-3 col-form-label">Studio</label>
                                     <div class="col-sm-9">
-                                        <select class="form-select genre-select" name="studio_id">
-                                            <option disabled selected>Pilih Studio</option>
+                                        <select class="form-select genre-select" name="studio_id" required>
+                                            <option value="">Pilih Studio</option>
                                             <?php foreach($studios as $s): ?>
                                             <option value="<?= $s['studio_id'] ?>"
                                                 <?= ($editMode && $editData['studio_id'] == $s['studio_id']) ? 'selected' : '' ?>>
@@ -384,16 +494,16 @@
                                 <div class="row align-items-center mb-3 mt-3">
                                     <label for="price" class="col-sm-3 col-form-label">Price</label>
                                     <div class="col-sm-9">
-                                        <input id="price" class="form-control" type="text" readonly>
+                                        <input id="price" class="form-control" type="text" readonly value="<?= $editMode ? number_format($editData['price']) : '' ?>">
                                     </div>
                                 </div>
                                 <!-- card footer -->
                                 <div class="text-end">
                                 <?php if ($editMode): ?>
-                                    <button name="update" class="btn btn-warning fw-bold">Save Changes</button>
                                     <a href="manage_showtimes.php" class="btn btn-secondary">Cancel</a>
+                                    <button name="update" class="btn btn-warning " type="submit">Save Changes</button>
                                 <?php else: ?>
-                                    <button name="add" class="btn btn-success fw-bold">Save</button>
+                                    <button name="add" type="submit" class="btn btn-success">Save</button>
                                 <?php endif; ?>
                                 </div>
 
@@ -418,6 +528,30 @@
         </div>
 
         <script>
+            const searchInput = document.getElementById("searchTitle");
+            const tbody = document.getElementById("showtimesBody");
+
+            let timeout = null;
+
+            searchInput.addEventListener("keyup", function () {
+                clearTimeout(timeout);
+
+                timeout = setTimeout(() => {
+                    const keyword = this.value;
+
+                    fetch(`ajax/search_showtimes.php?q=${encodeURIComponent(keyword)}`)
+                        .then(res => res.text())
+                        .then(html => {
+                            tbody.innerHTML = html || `
+                                <tr>
+                                    <td colspan="8" class="text-center text-muted">
+                                        No data found
+                                    </td>
+                                </tr>`;
+                        });
+                }, 300); // debounce 300ms
+            });
+
 
             function updateEndTime() {
                 const startTimeInput = document.getElementById("showtime-time").value;
@@ -510,18 +644,6 @@
                 document.getElementById("end-time").value = endTime;
             });
 
-
-            // Function untuk price 
-            document.getElementById("showing-date").addEventListener("change", function() {
-                const day = new Date(this.value).getDay(); 
-                // 0 Minggu, 1 Senin, 2 Selasa, dst
-                
-                // weekend (Jumat, Sabtu, Minggu) = 45.000
-                // weekday (Senin, Selasa, Rabu, Kamis) = 4
-                let price = (day === 5 || day === 6 || day === 0) ? 45000 : 40000;
-
-                document.getElementById("price").value = price.toLocaleString();
-            });
 
 
         </script>

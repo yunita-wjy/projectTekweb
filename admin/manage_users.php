@@ -1,7 +1,7 @@
 <?php
-    session_start();
+    
     require "../config/connection.php";
-    // require "../includes/admin_auth.php";
+    require "../includes/admin_auth.php";
     
     // if(!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'admin'){
     //     header("Location: ../auth/login.php");
@@ -183,8 +183,7 @@
                         <div class="card-header d-flex justify-content-between align-items-center">
                             <h5 class="mb-0 fw-bold">LIST OF USERS</h5>
                             <form class="d-flex">
-                                <input id="searchTitle" class="form-control form-control-sm me-2" placeholder="Search User..." style="width: 200px;">
-                                <button id="btnSearch" class="btn btn-outline-primary btn-sm" type="button">Search</button>
+                                <input id="searchTitle" class="form-control form-control-sm me-2" placeholder="Search Username / Name..." style="width: 200px;">
                             </form>
                         </div>
                         <div class="card-body p-0">
@@ -201,7 +200,7 @@
                                             <th>Action</th> <!--edit, delete-->
                                         </tr>
                                     </thead>
-                                    <tbody>
+                                    <tbody id="userTableBody">
                                     <?php if(count($users) > 0): ?>
                                         <?php foreach($users as $index => $user): ?>
                                             <tr>
@@ -316,6 +315,21 @@
 
         
         <script>
+            // Search User
+            const searchInput = document.getElementById("searchTitle");
+            const tbody = document.getElementById("userTableBody");
+
+            searchInput.addEventListener('keyup', function () {
+                const keyword = this.value;
+
+                fetch(`ajax/search_users.php?q=${encodeURIComponent(keyword)}`)
+                    .then(res => res.text())
+                    .then(html => {
+                        tbody.innerHTML = html;
+                    });
+            });
+
+
             var editUserModal = document.getElementById('editUserModal')
             editUserModal.addEventListener('show.bs.modal', function (event) {
             var button = event.relatedTarget

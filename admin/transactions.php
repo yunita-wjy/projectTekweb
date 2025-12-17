@@ -1,12 +1,32 @@
 <?php
-    session_start();
+    
     require "../config/connection.php";
-    // require "../includes/admin_auth.php";
+    require "../includes/admin_auth.php";
     
     // if(!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'admin'){
     //     header("Location: ../auth/login.php");
     //     exit();
     // }
+
+    $transactions = $conn->query("
+        SELECT 
+            t.transaction_id,
+            t.created_at,
+            u.username,
+            m.title AS movie_title,
+            st.studio_name,
+            s.start_time,
+            t.tickets_qty,
+            t.total_price,
+            t.status
+        FROM transactions t
+        JOIN users u ON t.user_id = u.user_id
+        JOIN showtimes s ON t.showtime_id = s.showtime_id
+        JOIN movies m ON s.movie_id = m.movie_id
+        JOIN studios st ON s.studio_id = st.studio_id
+        ORDER BY t.created_at DESC
+    ");
+
 ?>
 
 <!DOCTYPE html>
@@ -134,8 +154,28 @@
                                         </tr>
                                     </thead>
                                     <tbody>
-                                    <!-- BUTUH AMBIL DARI DATABASE -->
+                                        <?php $no = 1; while($row = $transactions->fetch_assoc()): ?>
+                                        <tr>
+                                            <td><?= $no++ ?></td>
+                                            <td><?= date('Y-m-d', strtotime($row['created_at'])) ?></td>
+                                            <td><?= date('H:i', strtotime($row['created_at'])) ?></td>
+                                            <td><?= htmlspecialchars($row['username']) ?></td>
+                                            <td><?= htmlspecialchars($row['movie_title']) ?></td>
+                                            <td><?= substr($row['start_time'], 0, 5) ?></td>
+                                            <td><?= htmlspecialchars($row['studio_name']) ?></td>
+                                            <td><?= $row['tickets_qty'] ?></td>
+                                            <td><?= number_format($row['total_price']) ?></td>
+                                            <td>
+                                                <span class="badge 
+                                                    <?= $row['status']=='paid' ? 'bg-success' : 
+                                                    ($row['status']=='cancelled' ? 'bg-danger' : 'bg-warning') ?>">
+                                                    <?= strtoupper($row['status']) ?>
+                                                </span>
+                                            </td>
+                                        </tr>
+                                        <?php endwhile; ?>
                                     </tbody>
+
 
                                 </table>
 
@@ -151,6 +191,21 @@
 
 
         </div>
+
+        <script>
+        const searchInput = document.getElementById("searchTitle");
+        const tbody = document.getElementById("transactionTableBody");
+
+        searchInput.addEventListener("keyup", function () {
+            const keyword = this.value;
+
+            fetch(`ajax/search_transactions.php?q=${encodeURIComponent(keyword)}`)
+                .then(res => res.text())
+                .then(html => {
+                    tbody.innerHTML = html;
+                });
+        });
+        </script>
 
     </body>
 </html>

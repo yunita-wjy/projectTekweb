@@ -1,11 +1,24 @@
 <?php
-    session_start();
+    
     require "../config/connection.php";
-    // require "../includes/admin_auth.php";
+    require "../includes/admin_auth.php";
     
     // if(!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'admin'){
     //     header("Location: ../auth/login.php");
     //     exit();
+    // }
+
+    // SIMULASI LOGIN ADMIN (sementara, tanpa login page)
+    // if (!isset($_SESSION['user'])) {
+    //     $q = $conn->query("SELECT user_id, username, full_name, email, role 
+    //                     FROM users 
+    //                     WHERE role = 'admin' 
+    //                     LIMIT 1");
+    //     $admin = $q->fetch_assoc();
+
+    //     if ($admin) {
+    //         $_SESSION['user'] = $admin;
+    //     }
     // }
 
     $result = mysqli_query($conn, "SELECT * FROM studios");
