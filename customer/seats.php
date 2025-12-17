@@ -15,7 +15,15 @@ $user = $_SESSION['user'];
 <head>
     <meta charset="UTF-8">
     <title>Select Seat</title>
+    <!-- favicon -->
+    <link href="../assets/filmVerse-light.png" rel="icon" media="(prefers-color-scheme: light)" />
+    <link href="../assets/filmVerse-dark.png" rel="icon" media="(prefers-color-scheme: dark)" />
+    <!-- icon -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- sweet alert -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/sweetalert/1.1.3/sweetalert.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sweetalert/1.1.3/sweetalert.min.js"></script>
+    <!-- bootstrap -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="../seat.css">
     <script src="../script.js"></script>
@@ -96,6 +104,29 @@ $user = $_SESSION['user'];
         <!-- SEATS -->
         <div class="seating-wrapper">
             <div class="seating" id="seating"></div>
+            <script src="../seat.js"></script>
+            <script>
+                document.addEventListener('DOMContentLoaded', () => {
+                            console.log('Document loaded, fetching booked seats...');
+                            fetch('backend/booked_seats.php')
+                                .then(response => response.json())
+                                .then(data => {
+                                    console.log('Booked seats data:', data);
+                                    console.log(data); // cek di console browser
+                                    // misal dapat data dari PHP/DB sudah di-parse ke JS variable seatsFromDB
+
+                                    const seatLayout = convertSeatsToLayout(data.seats);
+                                    const bookedSeats = data.bookedSeats; // gunakan data dari backend
+                                    console.log(seatLayout);
+
+                                    // pastikan seatLayout global di-assign hasil konversi:
+                                    window.seatLayout = seatLayout; // atau sesuaikan nama variable global
+                                    window.bookedSeats = bookedSeats;
+                                    generateSeatLayout();
+                                })
+                                .catch(error => console.error('Error fetching booked seats:', error));
+                        });
+            </script>
         </div>
 
         <!-- LEGEND -->
@@ -131,7 +162,7 @@ $user = $_SESSION['user'];
             </div>
         </div>
     </div>
-    
+
     <!-- POPUP TRANSACTION DETAIL -->
     <div class="modal-overlay" id="transactionModalOverlay">
         <div class="transaction-modal">
@@ -218,13 +249,30 @@ $user = $_SESSION['user'];
                 <button class="btn-cancel" id="cancelTransactionBtn">
                     <i class="fas fa-times me-2"></i>Cancel
                 </button>
-                <button class="btn-payment" id="confirmPaymentBtn">
+                <button class="btn-payment" id="confirmPaymentBtn" onclick="confirmPaymentBtn('backend/payment.php')">
                     <i class="fas fa-lock me-2"></i>Pay Now
                 </button>
             </div>
+            <?php if (isset($_GET['payment']) && $_GET['payment'] === 'success'): ?>
+                <script>
+                    $(document).ready(function() {
+                        showSwal(
+                            'success',
+                            'Success!',
+                            'Anda berhasil logout!',
+                            function() {
+                                window.history.replaceState({},
+                                    document.title,
+                                    'index.php'
+                                );
+                            }
+                        );
+                    });
+                </script>
+            <?php endif; ?>
         </div>
     </div>
-    <script src="../seat.js"></script>
+    <!-- <script src="../seat.js"></script> -->
 </body>
 
 </html>

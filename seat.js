@@ -2,7 +2,7 @@
 
 // ===== KONFIGURASI =====
 // Tetap gunakan seatLayout Anda
-const seatLayout = [
+const seatLayouthc = [
     { row: 'H', left: 7, right: 8 }, // total 15
     { row: 'G', left: 7, right: 8 },
     { row: 'F', left: 7, right: 8 },
@@ -14,7 +14,7 @@ const seatLayout = [
 ];
 
 // Tetap gunakan bookedSeats dari contoh
-const bookedSeats = [
+const bookedSeatshc = [
     'A3', 'A4', 'A5', 'B7', 'B8', 'C1', 'C2',
     'D10', 'D11', 'E5', 'E6', 'F3', 'F4', 'G9',
     'H2', 'H3'];
@@ -23,6 +23,9 @@ const bookedSeats = [
 let selectedSeats = [];
 
 const seatPrice = 35000; // Harga per kursi
+const serviceFee = 2500;
+let totalPrice = 0;  // harga total seats yang dipilih
+
 
 let modalMovieData = {
     title: 'Movie Title',
@@ -33,7 +36,7 @@ let modalMovieData = {
 
 // Inisialisasi
 document.addEventListener('DOMContentLoaded', function () {
-    generateSeatLayout();
+    // generateSeatLayout();
     updateSelectionSummary();
 
     // Event listeners untuk tombol
@@ -44,26 +47,59 @@ document.addEventListener('DOMContentLoaded', function () {
     loadPreviousSelection();
 });
 
+function convertSeatsToLayout(seatsFromDB) {
+  // Cari semua row unik (urutkan dari H ke A supaya sama kayak contoh)
+  const allRows = [...new Set(seatsFromDB.map(s => s.row))].sort().reverse();
+
+  // Default total kursi per row
+  const totalSeatsPerRow = 15;
+
+  // Buat array hasil seatLayout
+  const seatLayout = allRows.map(row => {
+    // Filter semua kursi yang ada di row ini
+    const seatsInRow = seatsFromDB.filter(s => s.row === row);
+
+    // Hitung kursi kiri (col <= 7)
+    const rightCount = 8;
+
+    // Hitung kursi kanan
+    const leftCount = seatsInRow.length - rightCount;
+
+    // Kalau row tertentu mau kasih gapAfter (misal 'E'), bisa juga di-handle sini
+    const gapAfter = (row === 'E'); // sesuaikan kalau mau yang lain
+
+    return {
+      row: row,
+      left: leftCount,
+      right: rightCount,
+      ...(gapAfter ? { gapAfter: true } : {})
+    };
+  });
+
+  return seatLayout;
+}
+
+
 function setupModalEvents() {
     // Close modal button
     document.getElementById('closeModalBtn').addEventListener('click', closeTransactionModal);
-    
+
     // Cancel transaction button
     document.getElementById('cancelTransactionBtn').addEventListener('click', closeTransactionModal);
-    
+
     // Confirm payment button
-    document.getElementById('confirmPaymentBtn').addEventListener('click', processPayment);
-    
+    // document.getElementById('confirmPaymentBtn').addEventListener('click', processPayment());
+
     // Close modal when clicking outside
-    document.getElementById('transactionModalOverlay').addEventListener('click', function(e) {
+    document.getElementById('transactionModalOverlay').addEventListener('click', function (e) {
         if (e.target === this) {
             closeTransactionModal();
         }
     });
-    
+
     // Payment method selection
     document.querySelectorAll('.payment-option').forEach(option => {
-        option.addEventListener('click', function() {
+        option.addEventListener('click', function () {
             document.querySelectorAll('.payment-option').forEach(opt => {
                 opt.classList.remove('active');
             });
@@ -172,7 +208,7 @@ function updateSelectionSummary() {
 
     // Update info jumlah kursi
     const seatCount = selectedSeats.length;
-    const totalPrice = seatCount * seatPrice;
+    totalPrice = seatCount * seatPrice;
     if (Price) {
         if (seatCount > 0) {
             Price.textContent = `Total: Rp.${totalPrice.toLocaleString('id-ID')}`;
@@ -250,10 +286,10 @@ function showTransactionModal() {
         alert('Please select at least one seat.');
         return;
     }
-    
+
     // Update modal content
     updateModalContent();
-    
+
     // Show modal
     document.getElementById('transactionModalOverlay').classList.add('active');
     document.body.style.overflow = 'hidden'; // Prevent scrolling
@@ -263,30 +299,31 @@ function showTransactionModal() {
 function updateModalContent() {
     const seatCount = selectedSeats.length;
     const ticketPrice = seatPrice * seatCount;
-    const serviceFee = 2500;
-    const totalPrice = ticketPrice + serviceFee;
-    
+    totalPrice = ticketPrice + serviceFee;
+
     // Update movie info
     document.getElementById('modalMovieTitle').textContent = modalMovieData.title;
     document.getElementById('modalShowDate').textContent = `Date: ${modalMovieData.date}`;
     document.getElementById('modalShowTime').textContent = `Time: ${modalMovieData.time}`;
     document.getElementById('modalStudio').textContent = `Studio: ${modalMovieData.studio}`;
-    
+
     // Update seats list
     const seatsContainer = document.getElementById('modalSeatsList');
     seatsContainer.innerHTML = '';
-    
+
     selectedSeats.forEach(seatId => {
         const badge = document.createElement('div');
         badge.className = 'seat-badge-modal';
         badge.textContent = seatId;
         seatsContainer.appendChild(badge);
     });
-    
+
     // Update ticket count and price
     document.getElementById('modalTicketCount').textContent = seatCount;
     document.getElementById('modalTicketPrice').textContent = `Rp ${ticketPrice.toLocaleString()},-`;
     document.getElementById('modalTotalPrice').innerHTML = `<strong>Rp ${totalPrice.toLocaleString()},-</strong>`;
+
+    updateSelectionSummary();
 }
 
 // Fungsi untuk close modal
@@ -295,41 +332,58 @@ function closeTransactionModal() {
     document.body.style.overflow = 'auto'; // Enable scrolling
 }
 
-// Proceed to checkout (simulasi) - DARI CONTOH
-function proceedToCheckout() {
-    if (selectedSeats.length === 0) return;
+function confirmPaymentBtn(href) {
+    swal({
+        title: "Confirm Payment? (Dummy)",
+        text: "Make sure your selected seats are correct!",
+        type: "warning",
+        showCancelButton: true,
+        confirmButtonColor: "#28a745",
+        confirmButtonText: "Pay Now",
+        cancelButtonText: "Cancel",
+        closeOnConfirm: false
+    }, function (isConfirm) {
+        if (isConfirm) {
+            const data = {
+                showtime_id: 1,
+                seats: selectedSeats,
+                total_price: totalPrice + serviceFee,
+                tickets_qty: selectedSeats.length
+            };
 
-    const seatCount = selectedSeats.length;
-    const totalPrice = seatCount * seatPrice;
-
-    // Simpan ke localStorage atau session untuk proses checkout
-    localStorage.setItem('selectedSeats', JSON.stringify(selectedSeats));
-
-    // Ambil data movie dan showtime dari URL (jika ada)
-    const urlParams = new URLSearchParams(window.location.search);
-    const movieId = urlParams.get('movie_id') || '1';
-    const showtime = urlParams.get('showtime') || '18:00';
-
-    // Tampilkan alert konfirmasi
-    alert(`You have selected ${selectedSeats.length} seat(s): ${selectedSeats.join(', ')}\nMovie ID: ${movieId}\nShowtime: ${showtime}\n\nProceeding to checkout...`);
-
-    // Simpan data booking lengkap
-    const bookingData = {
-        seats: selectedSeats,
-        movieId: movieId,
-        showtime: showtime,
-        totalPrice: totalPrice, // Rp 35,000 per kursi
-        timestamp: new Date().toISOString()
-    };
-
-    // Simpan ke sessionStorage juga
-    sessionStorage.setItem('bookingData', JSON.stringify(bookingData));
-
-    // Untuk demo, tampilkan di console
-    console.log('Selected seats:', selectedSeats);
-    console.log('Booking data:', bookingData);
-    console.log('Proceeding to checkout...');
-
-    // Dalam implementasi nyata, redirect ke halaman checkout
-    // window.location.href = `checkout.php?movie_id=${movieId}&showtime=${showtime}&seats=${selectedSeats.join(',')}`;
+            fetch(href, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            })
+                //   .then(response => response.json())
+                .then(response => response.text())
+                .then(text => {
+                    console.log('Response text:', text); // cek dulu response
+                    try {
+                        const result = JSON.parse(text); // parse JSON manual
+                        return result;
+                    } catch (e) {
+                        throw new Error('Invalid JSON response');
+                    }
+                })
+                .then(result => {
+                    console.log('Payment result:', result);
+                    if (result.success) {
+                        swal("Payment Successful!", "Your payment has been processed.", "success")
+                        setTimeout(() => {
+                            window.location.href = 'seats.php?payment=success';
+                        }, 1500);
+                    } else {
+                        swal("Payment Failed!", result.message, "error");
+                    }
+                })
+            // .catch(error => {
+            //     // console.error('Error:', error);
+            //     swal("Payment Failed!", "An error occurred during payment.", "error");
+            // });
+        }
+    });
 }
