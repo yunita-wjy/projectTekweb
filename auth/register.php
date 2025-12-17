@@ -1,14 +1,18 @@
 <?php
     require("../config/connection.php");
 
-    if(isset($_POST['register'])){
-    $name     = $_POST['name'];
+    $username = $_POST['username'];
+    $fullname = $_POST['fullname'];
     $email    = $_POST['email'];
-    $password = password_hash($_POST['password'], PASSWORD_DEFAULT);
+    $phone  = $_POST['phone'];
+    $password = $_POST['password'];
 
-    $query = "INSERT INTO users (name, email, password) VALUES ('$name', '$email', '$password')";
-    mysqli_query($conn, $query);
+    $hash_password = password_hash($password, PASSWORD_DEFAULT);
 
-    header("Location: login.php");
-}
+    $query = "INSERT INTO users (`username`, `full_name`, `email`, `phone`, `password`) 
+    VALUES ('$username', '$fullname', '$email', '$phone', '$hash_password')";
+    $conn->query($query);
+
+    header('Location: ../customer/signupUI.php?signup=success');
+    exit();
 ?>

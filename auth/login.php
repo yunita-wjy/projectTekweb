@@ -1,27 +1,26 @@
 <?php
-    session_start();
-    require("../config/connection.php");
+session_start();
+require("../config/connection.php");
 
-    if(isset($_POST['login'])){
-        $email    = $_POST['email'];
-        $password = $_POST['password'];
 
-        $result = mysqli_query($conn, "SELECT * FROM users WHERE email='$email'");
-        $user   = mysqli_fetch_assoc($result);
+    $email    = $_POST['email'];
+    $password = $_POST['password'];
 
-        if($user && password_verify($password, $user['password'])){
-            $_SESSION['user'] = $user;
+    $user = $database->attemp($email, $password);
 
-            // cek role user
-            if($user['role'] == 'admin') {
-                header("Location: ../admin/dashboard.php"); // ke dashboard admin
-            } else {
-                header("Location: ../index.php"); // ke homepage customer
-            }
-            exit();
+    if ($user) {
+        $_SESSION['user'] = $user;
 
+        // cek role user
+        if ($user['role'] == 'admin') {
+            header("Location: ../admin/dashboard.php"); // ke dashboard admin
         } else {
-            echo "Email atau password salah!";
+            header("Location: ../index.php"); // ke homepage customer
         }
+        exit();
+    } else {
+        header("Location: ../customer/loginUI.php?msg=failed"); // failed 
+        exit();
     }
+
 ?>
