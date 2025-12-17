@@ -24,6 +24,13 @@ let selectedSeats = [];
 
 const seatPrice = 35000; // Harga per kursi
 
+let modalMovieData = {
+    title: 'Movie Title',
+    date: 'Date: -',
+    time: 'Time: -',
+    studio: 'Studio: -'
+};
+
 // Inisialisasi
 document.addEventListener('DOMContentLoaded', function () {
     generateSeatLayout();
@@ -31,10 +38,41 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Event listeners untuk tombol
     document.getElementById('clearBtn').addEventListener('click', clearSelection);
-    document.getElementById('continueBtn').addEventListener('click', proceedToCheckout);
+    document.getElementById('continueBtn').addEventListener('click', showTransactionModal);
+
+    setupModalEvents();
+    loadPreviousSelection();
 });
 
-// Generate layout kursi - DENGAN LOGIC ANDA
+function setupModalEvents() {
+    // Close modal button
+    document.getElementById('closeModalBtn').addEventListener('click', closeTransactionModal);
+    
+    // Cancel transaction button
+    document.getElementById('cancelTransactionBtn').addEventListener('click', closeTransactionModal);
+    
+    // Confirm payment button
+    document.getElementById('confirmPaymentBtn').addEventListener('click', processPayment);
+    
+    // Close modal when clicking outside
+    document.getElementById('transactionModalOverlay').addEventListener('click', function(e) {
+        if (e.target === this) {
+            closeTransactionModal();
+        }
+    });
+    
+    // Payment method selection
+    document.querySelectorAll('.payment-option').forEach(option => {
+        option.addEventListener('click', function() {
+            document.querySelectorAll('.payment-option').forEach(opt => {
+                opt.classList.remove('active');
+            });
+            this.classList.add('active');
+        });
+    });
+}
+
+// Generate layout kursi
 function generateSeatLayout() {
     const seating = document.getElementById('seating');
     if (!seating) {
@@ -125,35 +163,6 @@ function handleSeatClick(event) {
     saveSelectionToSession();
 }
 
-// Tambah event listeners untuk semua kursi available
-function addSeatEventListeners() {
-    document.querySelectorAll('.seat.available').forEach(seat => {
-        seat.addEventListener('click', toggleSeatSelection);
-    });
-}
-
-// Toggle seleksi kursi - DARI CONTOH
-function toggleSeatSelection(event) {
-    const seat = event.currentTarget;
-    const seatId = seat.dataset.seatId;
-
-    // Cek apakah kursi sudah dipilih
-    const seatIndex = selectedSeats.indexOf(seatId);
-
-    if (seatIndex === -1) {
-        // Tambah ke seleksi
-        selectedSeats.push(seatId);
-        seat.classList.add('selected');
-    } else {
-        // Hapus dari seleksi
-        selectedSeats.splice(seatIndex, 1);
-        seat.classList.remove('selected');
-    }
-
-    updateSelectionSummary();
-    saveSelectionToSession();
-}
-
 // Update summary seleksi - DARI CONTOH (disesuaikan dengan ID Anda)
 function updateSelectionSummary() {
     const seatInfo = document.getElementById('seatInfo');
@@ -197,6 +206,7 @@ function clearSelection() {
     // Hapus class selected dari semua kursi
     document.querySelectorAll('.seat.selected').forEach(seat => {
         seat.classList.remove('selected');
+        seat.classList.add('available');
     });
 
     // Reset array selectedSeats
@@ -232,6 +242,57 @@ function loadPreviousSelection() {
             console.error('Error loading saved seats:', e);
         }
     }
+}
+
+// Fungsi untuk show transaction modal
+function showTransactionModal() {
+    if (selectedSeats.length === 0) {
+        alert('Please select at least one seat.');
+        return;
+    }
+    
+    // Update modal content
+    updateModalContent();
+    
+    // Show modal
+    document.getElementById('transactionModalOverlay').classList.add('active');
+    document.body.style.overflow = 'hidden'; // Prevent scrolling
+}
+
+// Fungsi untuk update modal content
+function updateModalContent() {
+    const seatCount = selectedSeats.length;
+    const ticketPrice = seatPrice * seatCount;
+    const serviceFee = 2500;
+    const totalPrice = ticketPrice + serviceFee;
+    
+    // Update movie info
+    document.getElementById('modalMovieTitle').textContent = modalMovieData.title;
+    document.getElementById('modalShowDate').textContent = `Date: ${modalMovieData.date}`;
+    document.getElementById('modalShowTime').textContent = `Time: ${modalMovieData.time}`;
+    document.getElementById('modalStudio').textContent = `Studio: ${modalMovieData.studio}`;
+    
+    // Update seats list
+    const seatsContainer = document.getElementById('modalSeatsList');
+    seatsContainer.innerHTML = '';
+    
+    selectedSeats.forEach(seatId => {
+        const badge = document.createElement('div');
+        badge.className = 'seat-badge-modal';
+        badge.textContent = seatId;
+        seatsContainer.appendChild(badge);
+    });
+    
+    // Update ticket count and price
+    document.getElementById('modalTicketCount').textContent = seatCount;
+    document.getElementById('modalTicketPrice').textContent = `Rp ${ticketPrice.toLocaleString()},-`;
+    document.getElementById('modalTotalPrice').innerHTML = `<strong>Rp ${totalPrice.toLocaleString()},-</strong>`;
+}
+
+// Fungsi untuk close modal
+function closeTransactionModal() {
+    document.getElementById('transactionModalOverlay').classList.remove('active');
+    document.body.style.overflow = 'auto'; // Enable scrolling
 }
 
 // Proceed to checkout (simulasi) - DARI CONTOH

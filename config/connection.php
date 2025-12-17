@@ -2,7 +2,7 @@
 $host = "localhost";
 $user = "root";
 $pass = "";
-$db = "cinemadb";
+$db = "cinemadb2";
 
 try {
     $conn = new PDO("mysql:host=$host;dbname=$db", $user, $pass);
@@ -15,6 +15,6 @@ try {
 // echo 'koneksi sukses';
 
 require('dbConnect.php');
-$database = new dbConnection('cinemadb');
+$database = new dbConnection('cinemadb2');
 
 ?>
