@@ -46,7 +46,7 @@
         FROM tickets t
         JOIN transactions tr ON t.transaction_id = tr.transaction_id
         JOIN showtimes s ON t.showtime_id = s.showtime_id
-        WHERE tr.payment_status = 'PAID'
+        WHERE tr.status = 'PAID'
         AND s.show_date = CURDATE()
     ");
     $ticketsSoldToday = $q->fetch_assoc()['total'] ?? 0;
@@ -63,7 +63,7 @@
         JOIN tickets t ON tr.transaction_id = t.transaction_id
         JOIN showtimes s ON t.showtime_id = s.showtime_id
         JOIN movies m ON s.movie_id = m.movie_id
-        WHERE tr.payment_status = 'PAID'
+        WHERE tr.status = 'PAID'
         GROUP BY tr.transaction_id
         ORDER BY tr.created_at DESC
         LIMIT 5
@@ -81,7 +81,7 @@
         FROM tickets t
         JOIN transactions tr ON t.transaction_id = tr.transaction_id
         JOIN showtimes s ON t.showtime_id = s.showtime_id
-        WHERE tr.payment_status = 'PAID'
+        WHERE tr.status = 'PAID'
         AND s.show_date >= CURDATE() - INTERVAL 6 DAY
         GROUP BY s.show_date
         ORDER BY s.show_date ASC
