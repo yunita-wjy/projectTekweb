@@ -38,8 +38,8 @@ $user = $_SESSION['user'];
                 <span>FilmVerse</span>
             </div>
             <ul class="menu">
-                <li><a href="#hero">Home</a></li>
-                <li><a href="#films">Movies</a></li>
+                <li><a href="../index.php#hero">Home</a></li>
+                <li><a href="../index.php#films">Movies</a></li>
             </ul>
             <div class="akun">
                 <?php if ($user): ?>
