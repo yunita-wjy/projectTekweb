@@ -169,7 +169,7 @@ if (count($words) >= 2) {
                     <!-- Example error message -->
                     <div class="error-text mt-2">Failed to load more history</div>
                     <div class="text-end mt-3">
-                        <a href="../index.php" class="btn btn-primary-custom">
+                        <a href="javascript:history.back()" class="btn btn-primary-custom">
                             ← Back
                         </a>
                     </div>

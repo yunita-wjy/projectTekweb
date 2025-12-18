@@ -34,7 +34,7 @@ $user = $_SESSION['user'];
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <?php include '../includes/header.php'; ?>
     <div class="container">
-        <a href="movies_detail.php">← Back</a>
+        <a href="javascript:history.back()">← Back</a>
         <h2 class="text-center mb-1">Seat Selection</h2>
         <p class="text-center text-muted mb-4">Select your preferred seats for the movie</p>
 

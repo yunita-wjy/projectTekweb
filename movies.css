@@ -1,0 +1,61 @@
+:root {
+    --seat-size: 38px;
+    --seat-gap: 10px;
+    --aisle-gap: 40px;
+    --seat-radius: 8px;
+    --seat-font: 11px;
+    --bg-primary: #f8f9fa;
+    --bg-secondary: #e6e6e6;
+    --btn-primary: #4ecdc4;
+    --text-dark: #0a0a0a;
+    --seat-available: #e6e6e6;
+    --seat-booked: #dc3545;
+    --seat-selected: #4ecdc4;
+    --screen-color: #4ecdc4;
+}
+
+    /* Override Bootstrap button warna utama */
+    .btn-primary-custom {
+        background-color: var(--btn-primary);
+        color: var(--text-dark);
+        border: none;
+    }
+    .btn-primary-custom:hover {
+        background-color: #38b2ac; /* sedikit gelap dari btn-primary */
+        color: white;
+    }
+
+    /* Background main */
+    body {
+        background-color: var(--bg-primary);
+        color: var(--text-dark);
+    }
+
+    /* Card book tickets */
+    .card.bg-light {
+        background-color: var(--bg-secondary);
+        color: var(--text-dark);
+    }
+
+    /* Label */
+    label.form-label {
+        color: var(--text-dark);
+    }
+
+    /* Select & radio label */
+    .form-select, .btn-outline-dark {
+        color: var(--text-dark);
+    }
+
+    /* Radio button checked style */
+    input.btn-check:checked + label.btn-outline-dark {
+        background-color: var(--btn-primary);
+        color: var(--text-dark);
+        border-color: var(--btn-primary);
+    }
+
+    /* Trailer preview background */
+    .ratio.bg-dark {
+        background-color: var(--btn-primary);
+        color: var(--text-dark);
+    }
