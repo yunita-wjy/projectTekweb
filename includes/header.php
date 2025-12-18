@@ -1,30 +1,62 @@
-<!DOCTYPE html>
-<html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FilmVerse</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    
-    <link rel="stylesheet" href="<?php echo (file_exists('style.css') ? 'style.css' : '../style.css'); ?>">
-</head>
-<body>
-
 <header id="main-header">
-    <nav>
-        <div class="logo">
-            <img src="<?php echo (file_exists('assets/filmVerse-light.png') ? 'assets/filmVerse-light.png' : '../assets/filmVerse-light.png'); ?>" alt="Logo">
-            <span>FilmVerse</span>
-        </div>
-        
-        <ul class="menu">
-            <li><a href="<?php echo (file_exists('index.php') ? 'index.php' : '../index.php'); ?>">Home</a></li>
-            
-            <li><a href="<?php echo (file_exists('customer/movies.php') ? 'customer/movies.php' : 'movies.php'); ?>">Movies</a></li>
-            
-            <li class="akun">
-                <a href="<?php echo (file_exists('auth/login.php') ? 'auth/login.php' : '../auth/login.php'); ?>">Login</a>
-            </li>
-        </ul>
-    </nav>
-</header>
+        <nav>
+            <div class="logo">
+                <img src="../assets/filmVerse-light.png" alt="logo" />
+                <span>FilmVerse</span>
+            </div>
+            <ul class="menu">
+                <li><a href="#hero">Home</a></li>
+                <li><a href="../customer/movies.php">Movies</a></li>
+            </ul>
+            <div class="akun">
+                <?php if ($user): ?>
+                    <div class="dropdown">
+                        <a href="#"
+                            class="dropdown-toggle profile-toggle"
+                            data-bs-toggle="dropdown"
+                            aria-expanded="false">
+                             <i class="fa-regular fa-user me-2"></i>
+                            Hi, <strong><?= htmlspecialchars($user['username']) ?></strong>
+                        </a>
+
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li>
+                                <a class="dropdown-item" href="customer/profile.php">
+                                    <i class="fa-regular fa-user me-2"></i> Profile
+                                </a>
+                            </li>
+                            <li>
+                                <hr class="dropdown-divider">
+                            </li>
+                            <li>
+                                <a class="dropdown-item text-danger"
+                                    onclick="confirmLogout('auth/logout.php')">
+                                    <i class="fa-solid fa-right-from-bracket me-2"></i> Logout
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                <?php else: ?>
+                    <a href="customer/loginUI.php" class="login">Login</a>
+                <?php endif; ?>
+            </div>
+
+            <?php if (isset($_GET['logout']) && $_GET['logout'] === 'success'): ?>
+                <script>
+                    $(document).ready(function() {
+                        showSwal(
+                            'success',
+                            'Success!',
+                            'Anda berhasil logout!',
+                            function() {
+                                window.history.replaceState({},
+                                    document.title,
+                                    'index.php'
+                                );
+                            }
+                        );
+                    });
+                </script>
+            <?php endif; ?>
+        </nav>
+    </header>

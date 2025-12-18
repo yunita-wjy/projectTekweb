@@ -61,8 +61,7 @@ window.addEventListener('scroll', function () {
         title: title,
         text: text,
         type: "info",
-        timer: 1500,
-        showConfirmButton: false
+        confirmButtonText: "OK"
       });
     }
 
@@ -94,47 +93,13 @@ function confirmLogout(href) {
   });
 }
 
-// function confirmPaymentBtn(href) {
-//   swal({
-//     title: "Confirm Payment? (Dummy)",
-//     text: "Make sure your selected seats are correct!",
-//     type: "warning",
-//     showCancelButton: true,
-//     confirmButtonColor: "#28a745",
-//     confirmButtonText: "Pay Now",
-//     cancelButtonText: "Cancel",
-//     closeOnConfirm: false
-//   }).then(pay) => {
-//     if (pay) {
-//       const data = {
-//         showtime_id: movieId,    // atau dari URL param
-//         seats: selectedSeats,
-//         total_price: totalPrice,
-//         tickets_qty: selectedSeats.length
-//       };
-
-//       fetch(href, {
-//         method: 'POST',
-//         headers: {
-//           'Content-Type': 'application/json'
-//         },
-//         body: JSON.stringify(data)
-//       })
-//       .then(response => response.json())
-//       .then(result => {
-//         if (result.success) {
-//           swal("Payment Successful!", "Your payment has been processed.", "success")
-//           .then(() => {
-//             window.location.href = 'ticket_confirmation.php?transaction_id=' + result.transaction_id;
-//           });
-//         }
-//       } else {
-//         swal("Payment Failed!", result.message, "error");
-//       }
-//     })
-//     .catch(error => {
-//       console.error('Error:', error);
-//       swal("Payment Failed!", "An error occurred during payment.", "error");
-//     }
-//   });
-// }
+function editProfile() {
+  swal({
+    title: "Hallo!",
+    text: "Fitur edit profile sedang dalam pengembangan.",
+    type: "info",
+    confirmButtonColor: "#2885a7ff",
+    closeOnConfirm: false
+  })
+};
+    
