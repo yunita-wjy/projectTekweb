@@ -1,4 +1,4 @@
-<header id="main-header">
+<header class="main-header">
         <nav>
             <div class="logo">
                 <img src="../assets/filmVerse-light.png" alt="logo" />

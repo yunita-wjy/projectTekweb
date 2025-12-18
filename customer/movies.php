@@ -2,21 +2,39 @@
 session_start();
 require_once "../config/connection.php";
 require_once "../classes/movie.php";
-
+if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'customer') {
+    header("Location: ../auth/login.php");
+    exit();
+}
+$user = $_SESSION['user'];
 $movieObj = new movie($conn);
 $nowShowing = $movieObj->getNowShowing();
 ?>
 
 <!DOCTYPE html>
 <html lang="id">
-<?php include "includes/header.php"; ?>
 
+<head>
+    <meta charset="UTF-8" />
+    <title>Movies - Film Verse</title>
+    <!-- favicon -->
+    <link href="../assets/filmVerse-light.png" rel="icon" media="(prefers-color-scheme: light)" />
+    <link href="../assets/filmVerse-dark.png" rel="icon" media="(prefers-color-scheme: dark)" />
+    <!-- icon -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- sweet alert -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/sweetalert/1.1.3/sweetalert.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sweetalert/1.1.3/sweetalert.min.js"></script>
+    <!-- bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <link rel="stylesheet" href="../style.css?v=2">
+    <script src="../script.js"></script>
+</head>
 <body>
-
-    <?php include "includes/navbar.php"; ?>
-
-    <main class="container my-4">
-
+<?php include "../includes/header.php"; ?>
+<div class="mt-5 pt-4">
+    <main class="container my-4 mt-5">
         <div class="row align-items-center mb-5 hero-banner">
             <div class="col-md-8">
                 <h1 class="display-4 fw-bold text-warning">Avengers: Secret Wars</h1>
@@ -47,26 +65,27 @@ $nowShowing = $movieObj->getNowShowing();
         </div>
 
         <div class="row row-cols-2 row-cols-md-4 g-4">
-            
-            <?php while($film = mysqli_fetch_assoc($nowShowing)) { ?>
-            <div class="col">
-                <div class="movie-card" onclick="window.location.href='movies_detail.php?id=<?= $film['movie_id'] ?>'">
-                    <img src="../<?= $film['poster_path'] ?>" class="w-100" style="height: 380px; object-fit: cover;">
-                    
-                    <div class="movie-overlay">
-                        <button class="btn btn-warning rounded-pill fw-bold px-4">Beli Tiket</button>
+
+            <?php foreach($nowShowing as $film) { ?>
+                <div class="col">
+                    <div class="movie-card" onclick="window.location.href='movies_detail.php?id=<?= $film['movie_id'] ?>'">
+                        <img src="../<?= $film['poster_path'] ?>" class="w-100" style="height: 380px; object-fit: cover;">
+
+                        <div class="movie-overlay">
+                            <button class="btn btn-warning rounded-pill fw-bold px-4">Beli Tiket</button>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between mt-3">
+                        <strong class="text-truncate"><?= $film['title'] ?></strong>
+                        <span class="badge bg-secondary"><?= $film['duration'] ?>m</span>
                     </div>
                 </div>
-                
-                <div class="d-flex justify-content-between mt-3">
-                    <strong class="text-truncate"><?= $film['title'] ?></strong>
-                    <span class="badge bg-secondary"><?= $film['duration'] ?>m</span>
-                </div>
-            </div>
             <?php } ?>
 
         </div>
     </main>
+</div>
 
     <footer class="bg-light text-center py-4 border-top">
         <div class="container">
@@ -84,7 +103,6 @@ $nowShowing = $movieObj->getNowShowing();
             <p class="text-muted small">Copyright © 2025 Kelompok 8. All Rights Reserved.</p>
         </div>
     </footer>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
+
 </html>
