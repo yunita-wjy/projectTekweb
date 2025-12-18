@@ -1,58 +1,34 @@
 <?php
-session_start();
-$movieId = $_GET['id'] ?? 0;
+include "includes/header.php";
+include "../config/dbconnect.php";
+
+$id = $_GET['id'] ?? 0;
+$stmt = mysqli_prepare($conn, "SELECT * FROM movies WHERE movie_id = ?");
+mysqli_stmt_bind_param($stmt, "i", $id);
+mysqli_stmt_execute($stmt);
+$result = mysqli_stmt_get_result($stmt);
+$movie = mysqli_fetch_assoc($result);
+
+if (!$movie) {
+    echo "<div class='container my-5'>Movie not found</div>";
+    include "includes/footer.php";
+    exit;
+}
 ?>
-<!DOCTYPE html>
-<html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <title>Movie Detail | FilmVerse</title>
-    <link rel="stylesheet" href="../style.css">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-</head>
-<body>
 
-<div class="container my-4">
-
-    <a href="movies.php" class="btn btn-link mb-3">← Back to Movies</a>
-
+<div class="container my-5">
     <div class="row">
         <div class="col-md-4">
-            <img src="../assets/film<?= $movieId ?: 1 ?>.jpg" class="img-fluid rounded">
+            <img src="../assets/movieposter/<?= $movie['poster'] ?>" class="img-fluid rounded">
         </div>
-
         <div class="col-md-8">
-            <h1>Film <?= htmlspecialchars($movieId) ?></h1>
-            <p><strong>Genre:</strong> Action, Adventure</p>
-            <p>Halaman detail film. Data nantinya diambil dari database.</p>
-
-            <hr>
-
-            <h5>Book Ticket</h5>
-
-            <div class="mb-3">
-                <label>Tanggal</label>
-                <select class="form-select w-50">
-                    <option>28 Nov 2025</option>
-                    <option>29 Nov 2025</option>
-                </select>
-            </div>
-
-            <div class="mb-3">
-                <label>Jam Tayang</label><br>
-                <button class="btn btn-outline-dark btn-sm me-2">13:00</button>
-                <button class="btn btn-outline-dark btn-sm me-2">16:30</button>
-                <button class="btn btn-outline-dark btn-sm">19:00</button>
-            </div>
-
-            <button class="btn btn-dark w-100"
-                onclick="window.location.href='ticket.php?id=<?= $movieId ?>'">
+            <h1><?= $movie['title'] ?></h1>
+            <p><?= $movie['description'] ?></p>
+            <a href="seats.php?movie_id=<?= $movie['movie_id'] ?>" class="btn btn-dark">
                 Continue to Payment
-            </button>
+            </a>
         </div>
     </div>
-
 </div>
 
-</body>
-</html>
+<?php include "includes/footer.php"; ?>
