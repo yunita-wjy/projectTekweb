@@ -15,7 +15,7 @@
     //                     WHERE role = 'admin' 
     //                     LIMIT 1");
     //     $admin = $q->fetch_assoc();
-
+//localhost/proyek/projectTekweb/auth/dummu_admin_login.php
     //     if ($admin) {
     //         $_SESSION['user'] = $admin;
     //     }
