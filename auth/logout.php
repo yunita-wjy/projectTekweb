@@ -1,9 +1,12 @@
 <?php
-    // proses logout
-    session_start();
-    // hapus semua session
-    unset($_SESSION['user']);
+   session_start();
+
+    // hapus semua data session
+    $_SESSION = [];
+    session_unset();
     session_destroy();
-    // redirect ke login.php
-    header('Location: ../index.php?logout=success');
+
+    // redirect ke homepage
+    header("Location: ../index.php?logout=success");
+    exit();
 ?>

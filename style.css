@@ -16,7 +16,7 @@ header {
     color: #0a0a0a;
     height: 80px;
     width: 100%;
-    position: fixed;
+    position: sticky;
     top: 0;
     z-index: 1000;
     transition: background-color 0.4s ease, box-shadow 0.4s ease;
@@ -154,13 +154,13 @@ nav .akun a.login:hover {
 }
 
 /* kiri: judul & deskripsi */
-.container {
+/* .container {
     flex: 1;
     margin: 0 0px 50px 5px;
     padding: 0 200px 0 100px;
     align-content: end;
     text-align: left;
-}
+} */
 
 .container h1 {
     font-size: 24px;
@@ -255,7 +255,7 @@ footer {
     font-size: 14px;
     height: 240px;
     width: 100%;
-    max-width: 1440px;
+    max-width: none;
     line-height: 22px;
 }
 
@@ -287,10 +287,10 @@ footer ul li a:hover {
             margin: 20px 50px 20px 5px;
     }
 
-    .container {
+    .hero-container {
         flex: 1;
         margin: 0 0px 50px 5px;
-        padding: 0 50px 0 50px;
+        padding: 0 200px 0 100px;
         align-content: end;
         text-align: left;
     }
