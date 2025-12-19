@@ -22,7 +22,7 @@ const bookedSeatshc = [
 // State aplikasi
 let selectedSeats = [];
 
-const seatPrice = 35000; // Harga per kursi
+const seatPrice = 45000; // Harga per kursi
 const serviceFee = 2500;
 let totalPrice = 0;  // harga total seats yang dipilih
 

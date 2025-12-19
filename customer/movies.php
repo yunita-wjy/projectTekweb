@@ -2,6 +2,8 @@
 session_start();
 require_once "../config/connection.php";
 require_once "../classes/movie.php";
+// require "../config/cek_login.php";
+
 if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'customer') {
     header("Location: ../auth/login.php");
     exit();

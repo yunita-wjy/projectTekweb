@@ -1,11 +1,11 @@
 <header class="main-header">
     <nav>
+            <?php $base_url = '/ProjectTekweb/'; ?>
         <div class="logo">
-            <img src="../assets/filmVerse-light.png" alt="logo" />
+            <img src="<?= $base_url ?>assets/filmVerse-light.png" alt="logo" />
             <span>FilmVerse</span>
         </div>
         <ul class="menu">
-            <?php $base_url = '/ProjectTekweb/'; ?>
             <li><a href="<?= $base_url ?>index.php#hero">Home</a></li>
             <li><a href="<?= $base_url ?>customer/movies.php">Movies</a></li>
         </ul>

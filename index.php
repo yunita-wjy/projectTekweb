@@ -1,11 +1,43 @@
 <?php
 session_start();
+require "config/connection.php";
 
 if (isset($_SESSION['user'])) {
     $user = $_SESSION['user'];
 } else {
     $user = null;
 }
+$sqlShow = "
+    SELECT DISTINCT
+        m.movie_id,
+        m.title,
+        m.poster_path
+    FROM showtimes s
+    JOIN movies m ON s.movie_id = m.movie_id
+    WHERE 
+        m.status = 'active'
+        AND CURDATE() BETWEEN m.start_date AND m.end_date
+";
+
+$stmt = $conn->prepare($sqlShow);
+$stmt->execute();
+$nowShowing = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+
+// Ambil satu film random yang sedang tayang
+$sqlHero = "
+    SELECT *
+    FROM movies
+    WHERE status = 'active'
+      AND CURDATE() BETWEEN start_date AND end_date
+    ORDER BY RAND()
+    LIMIT 1
+";
+
+$stmt = $conn->prepare($sqlHero);
+$stmt->execute();
+$heroMovie = $stmt->fetch(PDO::FETCH_ASSOC);
+
 ?>
 
 <!DOCTYPE html>
@@ -98,7 +130,7 @@ if (isset($_SESSION['user'])) {
     <section id="detail">
 
     </section>
-    <footer>
+    <!-- <footer>
         <div class="footer-section">
             <h4>Movies</h4>
             <ul>
@@ -129,7 +161,8 @@ if (isset($_SESSION['user'])) {
                 <li><a href="#">Instagram</a></li>
             </ul>
         </div>
-    </footer>
+    </footer> -->
+    <?php include 'includes/footer.php'; ?>
     <script src="script.js"></script>
 </body>
 

@@ -8,19 +8,37 @@ if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'customer') {
     exit();
 }
 
-// Misal studio_id kamu dapat dari request atau set manual dulu
-$studio_id = 1;
+// Ambil showtime_id dari GET 
+// if (!isset($_GET['showtime_id'])) {
+//     http_response_code(400);
+//     echo json_encode(['success' => false, 'message' => 'showtime_id is required']);
+//     exit();
+// }
+// $showtime_id = (int)$_GET['showtime_id'];
 
+// $sqlStudio = "SELECT studio_id FROM showtimes WHERE showtime_id = :showtime_id LIMIT 1";
+// $stmt = $conn->prepare($sqlStudio);
+// $stmt->execute(['showtime_id' => $showtime_id]);
+// $studio = $stmt->fetch(PDO::FETCH_ASSOC);
+// if (!$studio) {
+//     http_response_code(404);
+//     echo json_encode(['success' => false, 'message' => 'Showtime not found']);
+//     exit();
+// }
+// $studio_id = $studio['studio_id'];
+
+// Data Dummy
+$studio_id = 1;
 $showtime_id = 5; // contoh
 
-$sql = "SELECT s.seat_row, s.seat_col
+$sqlBooked = "SELECT s.seat_row, s.seat_col
         FROM transaction_seats ts
         JOIN transactions t ON ts.transaction_id = t.transaction_id
         JOIN seats s ON ts.seat_id = s.seat_id
         WHERE ts.showtime_id = :showtime_id
           AND t.status = 'paid'";
 
-$stmt = $conn->prepare($sql);
+$stmt = $conn->prepare($sqlBooked);
 $stmt->execute(['showtime_id' => $showtime_id]);
 $bookedSeatsRaw = $stmt->fetchAll(PDO::FETCH_ASSOC);
 

@@ -2,6 +2,7 @@
 <?php
 session_start();
 require "../config/connection.php";
+// require "../config/cek_login.php";
 
 if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'customer') {
     header("Location: ../auth/login.php");
@@ -202,12 +203,9 @@ $user = $_SESSION['user'];
                         showSwal(
                             'success',
                             'Success!',
-                            'Anda berhasil logout!',
+                            'Pembelian tiket berhasil!',
                             function() {
-                                window.history.replaceState({},
-                                    document.title,
-                                    'index.php'
-                                );
+                                window.location.href = 'movies.php';
                             }
                         );
                     });
