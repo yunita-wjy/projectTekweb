@@ -14,14 +14,23 @@ $result = $query->get_result();
 $user = $result->fetch_assoc();
 
 if ($user && password_verify($password, $user['password'])) {
+
+    // cek domain email, kalau @filmverse.ac.id set role jadi admin
+    $role = $user['role'];
+    if (substr($email, -16) === "@filmverse.ac.id") {
+        $role = 'admin';
+    }
+
     $_SESSION['user'] = [
         'user_id'  => $user['user_id'],
         'username' => $user['username'],
+        'full_name' => $user['full_name'],
         'email'    => $user['email'],
-        'role'     => $user['role']
+        'role'     => $role
     ];
-    // cek role
-    if ($user['role'] === 'admin') {
+
+    // redirect berdasarkan role
+    if ($role === 'admin') {
         header("Location: ../admin/dashboard.php");
     } else {
         header("Location: ../index.php");
@@ -31,6 +40,4 @@ if ($user && password_verify($password, $user['password'])) {
     header("Location: ../customer/loginUI.php?msg=failed");
     exit();
 }
-
-
 ?>

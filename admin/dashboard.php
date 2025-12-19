@@ -53,22 +53,22 @@
 
     // RECENT TRANSACTIONS (5 terakhir)
     $recentTransactions = [];
-    $q = $conn->query("
+    $result = $conn->query("
         SELECT 
-            tr.created_at,
+            t.transaction_id,
+            t.created_at,
             u.username,
-            m.title
-        FROM transactions tr
-        JOIN users u ON tr.user_id = u.user_id
-        JOIN tickets t ON tr.transaction_id = t.transaction_id
+            m.title AS movie_title,
+            s.start_time
+        FROM transactions t
+        JOIN users u ON t.user_id = u.user_id
         JOIN showtimes s ON t.showtime_id = s.showtime_id
         JOIN movies m ON s.movie_id = m.movie_id
-        WHERE tr.status = 'PAID'
-        GROUP BY tr.transaction_id
-        ORDER BY tr.created_at DESC
+        WHERE t.status = 'PAID'
+        ORDER BY t.created_at DESC
         LIMIT 5
     ");
-    while($row = $q->fetch_assoc()){
+    while($row = $result->fetch_assoc()){
         $recentTransactions[] = $row;
     }
 
@@ -90,6 +90,8 @@
         $dailySales[] = $row;
     }
 
+    
+
 
     
 ?>
@@ -103,8 +105,7 @@
         <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
-        <!-- jQuery library -->
-        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+       
 
         <!-- Chartist -->
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/chartist.js/latest/chartist.min.css">
@@ -120,6 +121,9 @@
             .card-title.bg-primary { background:#0d6efd !important; } /* keep bootstrap */
             .poster-thumb { width: 60px; height: 80px; object-fit:cover; border-radius:4px; }
             .required { color: #dc3545; }
+            .ct-point {
+                stroke-width: 6px;
+            }
         </style>
     </head>
 
@@ -254,9 +258,9 @@
                                     <tr>
                                         <td><?= $i + 1 ?></td>
                                         <td><?= date('Y-m-d', strtotime($t['created_at'])) ?></td>
-                                        <td><?= date('H:i', strtotime($t['created_at'])) ?></td>
+                                        <td><?= date('H:i', strtotime($t['start_time'])) ?></td>
                                         <td><?= htmlspecialchars($t['username']) ?></td>
-                                        <td><?= htmlspecialchars($t['title']) ?></td>
+                                        <td><?= htmlspecialchars($t['movie_title']) ?></td>
                                     </tr>
                                 <?php endforeach; ?>
                             <?php else: ?>
@@ -269,7 +273,7 @@
                             </tbody>
                         </table>
 
-                        <button class="btn btn-primary rounded-2">Show More</button>
+                        <a href="transactions.php" class="btn btn-primary rounded-2">Show More</a>
                     </div>
 
                     <!-- daily ticket sales -->
@@ -327,11 +331,14 @@
         }, {
             low: 0,
             showArea: true,
+            showPoint: true,
             fullWidth: true,
             chartPadding: {
                 right: 30
-            }
+            },
+            axisY: { onlyInteger: true } 
         });
+        
     </script>
 
 </body>

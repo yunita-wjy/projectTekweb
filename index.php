@@ -1,6 +1,8 @@
 <?php
 session_start();
 
+$BASE_PATH = '/proyek/projectTekweb/';
+
 if (isset($_SESSION['user'])) {
     $user = $_SESSION['user'];
 } else {
@@ -22,6 +24,18 @@ $nowShowing = mysqli_query($conn, "
 
 ");
 
+    // Ambil satu film random yang sedang tayang
+    $heroMovieQuery = mysqli_query($conn, "
+        SELECT *
+        FROM movies
+        WHERE status = 'active'
+        AND CURDATE() BETWEEN start_date AND end_date
+        ORDER BY RAND()
+        LIMIT 1
+    ");
+    $heroMovie = mysqli_fetch_assoc($heroMovieQuery);
+
+
 ?>
 
 
@@ -34,6 +48,7 @@ $nowShowing = mysqli_query($conn, "
     <!-- BOOTSTRAP FIX -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="<?= $BASE_PATH ?>style.css?v=2"/>
 
     <style>
         body {
@@ -81,64 +96,46 @@ $nowShowing = mysqli_query($conn, "
 
 <body>
 
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top">
-    <div class="container">
-
-        <a class="navbar-brand d-flex align-items-center" href="#">
-            <img src="assets/filmVerse-dark.png" width="40" class="me-2">
-            <span class="fw-bold text-white">FilmVerse</span>
-        </a>
-
-        <ul class="navbar-nav ms-auto align-items-center">
-            <li class="nav-item">
-                <a class="nav-link active" href="#">Home</a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="#">Movies</a>
-            </li>
-
-            <?php if ($user): ?>
-                <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
-                        <i class="fa-regular fa-user me-1"></i>
-                        <?= htmlspecialchars($user['username'] ?? 'User') ?>
-                    </a>
-                    <ul class="dropdown-menu dropdown-menu-end">
-                        <li><a class="dropdown-item" href="customer/profile.php">Profile</a></li>
-                        <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item text-danger" href="auth/logout.php">Logout</a></li>
-                    </ul>
-                </li>
-            <?php else: ?>
-                <li class="nav-item">
-                    <a class="nav-link" href="customer/loginUI.php">Login</a>
-                </li>
-            <?php endif; ?>
-        </ul>
-
-    </div>
-</nav>
+<?php include("includes/header.php"); ?>
 
 
 
-<main class="container my-4">
-
+<main class="container my-1" style="padding-top: 70px;">
     <!-- HERO -->
-    <div class="hero-container">
-        <div class="row align-items-center mb-5 bg-dark text-white p-4 rounded shadow">
-            <div class="col-md-8">
-                <h1 class="display-4 fw-bold">Avengers: Secret Wars</h1>
-                <p class="lead">
-                    Earth's mightiest heroes must band together once again.
-                </p>
-                <button class="btn btn-danger btn-lg">Watch Now</button>
+    <div class="hero-container mb-5">
+        <?php if ($heroMovie): ?>
+
+        <div id="hero" 
+            style="--hero-bg: url('<?= htmlspecialchars($heroMovie['poster_path']) ?>');">
+
+            <!-- overlay gelap -->
+            <div class="hero-overlay"></div>
+
+            <!-- konten -->
+            <div class="row align-items-center hero-content p-5 text-white">
+                <!-- hero title & synopsis -->
+                <div class="col-md-8 ps-4">
+                    <h1 class="fw-bold" style="font-size: 28px;"><?= htmlspecialchars($heroMovie['title']) ?></h1>
+                    <p class="lead" style="font-size: 16px;">
+                        <?= nl2br(htmlspecialchars($heroMovie['synopsis'])) ?>
+                    </p>
+                    <a href="customer/movies_detail.php?id=<?= $heroMovie['movie_id'] ?>" class="btn btn-danger btn-lg mt-5">
+                        Watch Now
+                    </a>
+                </div>
+                <!-- hero poster -->
+                <div class="col-md-4 hero-image">
+                    <img src="<?= htmlspecialchars($heroMovie['poster_path'] ?? 'assets/movie_poster/default.jpg') ?>" 
+                        class="img-fluid rounded shadow">
+                </div>
             </div>
-            <div class="col-md-4 text-center">
-                <img src="https://via.placeholder.com/300x450"
-                     class="img-fluid rounded shadow">
-            </div>
-        </div>      
+
+        </div>
+        <?php else: ?>
+            <p class="text-center text-muted">Tidak ada film untuk ditampilkan di hero.</p>
+        <?php endif; ?>
     </div>
+
 
 
     <!-- NOW SHOWING -->
@@ -183,6 +180,18 @@ $nowShowing = mysqli_query($conn, "
         © 2025 Kelompok 8
     </p>
 </footer>
+
+<script>
+window.addEventListener("scroll", function () {
+    const header = document.getElementById("main-header");
+
+    if (window.scrollY > 10) {
+        header.classList.add("scrolled");
+    } else {
+        header.classList.remove("scrolled");
+    }
+});
+</script>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>

@@ -9,12 +9,26 @@ if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'customer') {
     exit();
 }
 
+
+
 $id = $_GET['id'] ?? 0;
 
 $stmt = $conn->prepare("SELECT * FROM movies WHERE movie_id = ?");
 $stmt->bind_param("i", $id);
 $stmt->execute();
 $movie = $stmt->get_result()->fetch_assoc();
+
+
+$showtimesQuery = $conn->prepare("
+    SELECT show_date, start_time 
+    FROM showtimes 
+    WHERE movie_id = ?
+    ORDER BY show_date, start_time
+");
+$showtimesQuery->bind_param("i", $id);
+$showtimesQuery->execute();
+$showtimes = $showtimesQuery->get_result()->fetch_all(MYSQLI_ASSOC);
+
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -61,10 +75,42 @@ $movie = $stmt->get_result()->fetch_assoc();
             <h1><?= htmlspecialchars($movie['title']) ?></h1>
             <p><?= nl2br(htmlspecialchars($movie['synopsis'])) ?></p>
 
-            <a href="seats.php?movie_id=<?= $movie['movie_id'] ?>"
-               class="btn btn-dark mt-3">
-                Continue to Payment
-            </a>
+        <div class="card bg-light border-0 p-4 mt-4 shadow-sm">
+            <h5 class="fw-bold mb-3">Book Tickets</h5>
+            
+            <form action="seats.php" method="GET">
+                <input type="hidden" name="movie_id" value="<?= $movie['movie_id'] ?>">
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-bold">Select Date</label>
+                        <select class="form-select" name="date">
+                            <?php
+                            $dates = [];
+                            foreach ($showtimes as $st) {
+                                $dates[$st['show_date']] = true; // uniq date
+                            }
+                            foreach (array_keys($dates) as $date): ?>
+                                <option value="<?= $date ?>"><?= date('d M Y', strtotime($date)) ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-bold">Showtime</label><br>
+                        <div class="btn-group w-100" role="group">
+                            <?php foreach ($showtimes as $index => $st): ?>
+                                <input type="radio" class="btn-check" name="time" id="t<?= $index ?>" value="<?= $st['start_time'] ?>" <?= $index === 0 ? 'checked' : '' ?>>
+                                <label class="btn btn-outline-dark" for="t<?= $index ?>"><?= date('H:i', strtotime($st['start_time'])) ?></label>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-warning w-100 fw-bold py-2 mt-2">
+                    CONTINUE TO SEATS
+                </button>
+            </form>
+        </div>
         </div>
     </div>
 <?php endif; ?>

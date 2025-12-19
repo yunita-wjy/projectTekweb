@@ -2,44 +2,52 @@
 session_start();
 header('Content-Type: application/json; charset=utf-8');
 require('../../config/connection.php');
+
 if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'customer') {
     http_response_code(401);
     echo json_encode(['success' => false, 'message' => 'Unauthorized access']);
     exit();
 }
 
-// Misal studio_id kamu dapat dari request atau set manual dulu
-$studio_id = 1;
+// Ambil studio_id dan showtime_id dari GET (bisa diganti manual juga)
+$studio_id = isset($_GET['studio_id']) ? intval($_GET['studio_id']) : 1;
+$showtime_id = isset($_GET['showtime_id']) ? intval($_GET['showtime_id']) : 5;
 
-$showtime_id = 5; // contoh
-
-$sql = "SELECT s.seat_row, s.seat_col
+// Ambil kursi yang sudah dibooking
+$sql = "SELECT s.seat_row, s.seat_column
         FROM transaction_seats ts
         JOIN transactions t ON ts.transaction_id = t.transaction_id
         JOIN seats s ON ts.seat_id = s.seat_id
-        WHERE ts.showtime_id = :showtime_id
-          AND t.status = 'paid'";
+        WHERE ts.showtime_id = $showtime_id
+          AND LOWER(t.status) = 'paid'";
 
-$stmt = $conn->prepare($sql);
-$stmt->execute(['showtime_id' => $showtime_id]);
-$bookedSeatsRaw = $stmt->fetchAll(PDO::FETCH_ASSOC);
+$bookedSeatsRaw = $conn->query($sql);
 
 $bookedSeats = [];
-foreach ($bookedSeatsRaw as $seat) {
-    $bookedSeats[] = $seat['seat_row'] . $seat['seat_col']; // Contoh "A5"
+if ($bookedSeatsRaw) {
+    while ($row = $bookedSeatsRaw->fetch_assoc()) {
+        $bookedSeats[] = $row['seat_row'] . $row['seat_column']; // Contoh "A5"
+    }
 }
 
-
-// Query ambil kursi untuk studio tersebut
-$result = $conn->query("SELECT seat_row, seat_col FROM seats WHERE studio_id = $studio_id");
-$seats = []; // array kosong
-while ($row = $result->fetch()) {
-    $seats[] = ['row' => $row['seat_row'], 'col' => $row['seat_col']];
+// Ambil semua kursi studio
+$result = $conn->query("SELECT seat_row, seat_column FROM seats WHERE studio_id = $studio_id");
+$seats = [];
+if ($result) {
+    while ($row = $result->fetch_assoc()) {
+        $seats[] = ['row' => $row['seat_row'], 'column' => $row['seat_column']];
+    }
 }
+
 // encode ke JSON
 echo json_encode([
     'seats' => $seats,
     'bookedSeats' => $bookedSeats
 ]);
-file_put_contents('debug_log.txt', print_r(json_encode($bookedSeats), true));  // Simpan ke file untuk cek
+
+// debug
+file_put_contents('debug_log.txt', print_r([
+    'seats' => $seats,
+    'bookedSeats' => $bookedSeats
+], true));
 ?>

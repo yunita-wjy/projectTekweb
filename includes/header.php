@@ -1,6 +1,18 @@
 <?php
 $BASE_PATH = '/proyek/projectTekweb/';
-$user = $user ?? null;
+$user = $_SESSION['user'] ?? null;
+
+
+// ambil nama depan
+$firstName = 'User';
+if (!empty($user['full_name'])) {
+    $firstName = explode(' ', trim($user['full_name']))[0];
+} elseif (!empty($user['username'])) {
+    $firstName = $user['username'];
+}
+
+
+
 ?>
 
 <header id="main-header">
@@ -9,7 +21,7 @@ $user = $user ?? null;
                 <img src="<?= $BASE_PATH ?>assets/filmVerse-light.png" alt="logo" />
                 <span>FilmVerse</span>
             </div>
-            <ul class="menu">
+            <ul class="menu fw-bold gap-4">
                 <li><a href="<?= $BASE_PATH ?>index.php">Home</a></li>
                 <li><a href="<?= $BASE_PATH ?>customer/movies.php">Movies</a></li>
             </ul>
@@ -21,7 +33,7 @@ $user = $user ?? null;
                             data-bs-toggle="dropdown"
                             aria-expanded="false">
                              <i class="fa-regular fa-user me-2"></i>
-                            Hi, <strong><?= htmlspecialchars($user['username']) ?></strong>
+                             Hi, <strong><?= htmlspecialchars($firstName) ?></strong>
                         </a>
 
                         <ul class="dropdown-menu dropdown-menu-end">
@@ -35,7 +47,7 @@ $user = $user ?? null;
                             </li>
                             <li>
                                 <a class="dropdown-item text-danger"
-                                    onclick="confirmLogout('<?= $BASE_PATH ?>auth/logout.php')">
+                                href="<?= $BASE_PATH ?>auth/logout.php">
                                     <i class="fa-solid fa-right-from-bracket me-2"></i> Logout
                                 </a>
                             </li>

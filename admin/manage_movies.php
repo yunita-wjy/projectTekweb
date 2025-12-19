@@ -439,7 +439,7 @@ $res2->free();
             <!-- LIST OF MOVIES -->
             <div class="card mb-4 shadow-sm">
                 <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">List of Movies</h5>
+                    <h5 class="mb-0 fw-bold">LIST OF MOVIES</h5>
                     <form class="d-flex">
                         <input id="searchTitle" class="form-control form-control-sm me-2" placeholder="Search Title...">
                     </form>
