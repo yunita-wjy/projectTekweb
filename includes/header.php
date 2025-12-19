@@ -1,10 +1,11 @@
-<header class="main-header">
+<header id="main-header">
     <nav>
-            <?php $base_url = '/ProjectTekweb/'; ?>
+        <?php $base_url = '/ProjectTekweb/'; ?>
         <div class="logo">
-            <img src="<?= $base_url ?>assets/filmVerse-light.png" alt="logo" />
+            <img src="<?= $base_url ?>assets/filmVerse-dark.png" alt="logo" />
             <span>FilmVerse</span>
         </div>
+
         <ul class="menu">
             <li><a href="<?= $base_url ?>index.php#hero">Home</a></li>
             <li><a href="<?= $base_url ?>customer/movies.php">Movies</a></li>
@@ -20,19 +21,19 @@
                         Hi, <strong><?= htmlspecialchars($user['username']) ?></strong>
                     </a>
 
-                    <ul class="dropdown-menu dropdown-menu-end">
-                        <li>
+                    <ul class="dropdown-menu">
+                        <li style="padding: 8px;">
                             <a class="dropdown-item" href="<?= $base_url ?>customer/profile.php">
-                                <i class="fa-regular fa-user me-2"></i> Profile
+                                <i class="fa-regular fa-user me-2"></i>Profile 
                             </a>
                         </li>
                         <li>
                             <hr class="dropdown-divider">
                         </li>
-                        <li>
+                        <li style="padding: 8px;">
                             <a class="dropdown-item text-danger"
                                 onclick="confirmLogout('auth/logout.php')">
-                                <i class="fa-solid fa-right-from-bracket me-2"></i> Logout
+                                <i class="fa-solid fa-right-from-bracket me-2"></i>Logout 
                             </a>
                         </li>
                     </ul>

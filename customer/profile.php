@@ -28,7 +28,7 @@ if (count($words) >= 2) {
     <!-- Bootstrap & style -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
     <!-- <link rel="stylesheet" href="../style.css?v=2" /> -->
-     <script src="../script.js"></script>
+     <script src="../assets/javascript/script.js"></script>
       <!-- sweet alert -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/sweetalert/1.1.3/sweetalert.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/sweetalert/1.1.3/sweetalert.min.js"></script>

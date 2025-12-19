@@ -37,6 +37,7 @@ $sqlHero = "
 $stmt = $conn->prepare($sqlHero);
 $stmt->execute();
 $heroMovie = $stmt->fetch(PDO::FETCH_ASSOC);
+$basePath = '';
 
 ?>
 
@@ -44,21 +45,8 @@ $heroMovie = $stmt->fetch(PDO::FETCH_ASSOC);
 <html lang="en">
 
 <head>
-    <meta charset="UTF-8" />
     <title>Film Verse</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- favicon -->
-    <link href="assets/filmVerse-light.png" rel="icon" media="(prefers-color-scheme: light)" />
-    <link href="assets/filmVerse-dark.png" rel="icon" media="(prefers-color-scheme: dark)" />
-    <!-- Bootstrap & style -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=2" />
-    <!-- sweet alert -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/sweetalert/1.1.3/sweetalert.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/sweetalert/1.1.3/sweetalert.min.js"></script>
-    <!-- jQuery -->
-    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-    <script src="script.js"></script>
+    <?php include 'includes/head.php'; ?>
 </head>
 
 <body>
@@ -84,40 +72,40 @@ $heroMovie = $stmt->fetch(PDO::FETCH_ASSOC);
     <section id="films">
         <h2>Films</h2>
         <div class="category">
-            <h3 id="most-viewed">Most Viewed</h3>
+            <h3 id="most-popular">Most Popular</h3>
             <div class="card-container">
-                <div class="card">
+                <div class="card1">
                     <img src="assets/film1.jpg" />
                     <p>title 1</p>
                 </div>
-                <div class="card">
+                <div class="card1">
                     <img src="assets/film2.jpg" />
                     <p>title 2</p>
                 </div>
-                <div class="card">
+                <div class="card1">
                     <img src="assets/film3.jpg" />
                     <p>title 3</p>
                 </div>
-                <div class="card">
+                <div class="card1">
                     <img src="assets/film4.jpg" />
                     <p>title 4</p>
                 </div>
             </div>
-            <h3 id="most-popular">Most Popular</h3>
+            <h3 id="coming-soon">Coming Soon</h3>
             <div class="card-container">
-                <div class="card">
+                <div class="card2">
                     <img src="assets/film2.jpg" />
                     <p>title 1</p>
                 </div>
-                <div class="card">
+                <div class="card2">
                     <img src="assets/film4.jpg" />
                     <p>title 2</p>
                 </div>
-                <div class="card">
+                <div class="card2">
                     <img src="assets/film3.jpg" />
                     <p>title 3</p>
                 </div>
-                <div class="card">
+                <div class="card2">
                     <img src="assets/film1.jpg" />
                     <p>title 4</p>
                 </div>
@@ -163,7 +151,7 @@ $heroMovie = $stmt->fetch(PDO::FETCH_ASSOC);
         </div>
     </footer> -->
     <?php include 'includes/footer.php'; ?>
-    <script src="script.js"></script>
+    <script src="assets/javascript/script.js"></script>
 </body>
 
 </html>

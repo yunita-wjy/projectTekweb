@@ -1,8 +1,8 @@
 <meta charset="UTF-8" />
 
 <!-- favicon -->
-<link href="assets/filmVerse-light.png" rel="icon" media="(prefers-color-scheme: light)" />
-<link href="assets/filmVerse-dark.png" rel="icon" media="(prefers-color-scheme: dark)" />
+<link href="<?= $basePath ?>assets/filmVerse-light.png" rel="icon" media="(prefers-color-scheme: light)" />
+<link href="<?= $basePath ?>assets/filmVerse-dark.png" rel="icon" media="(prefers-color-scheme: dark)" />
 
 <!-- Icon -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -18,5 +18,5 @@
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 
 <!-- global css & js -->
-<link rel="stylesheet" href="<? $basePath?>style.css?v=2" />
-<script src="<? $basePath?>script.js"></script>
+<link rel="stylesheet" href="<?= $basePath ?>assets/css/style.css?v=2" />
+<script src="<? $basePath ?>assets/javascript/script.js"></script>

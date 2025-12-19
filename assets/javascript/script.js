@@ -81,7 +81,7 @@ window.addEventListener('scroll', function () {
 function confirmLogout(href) {
   swal({
     title: "Yakin mau logout?",
-    text: "Anda akan keluar dari akun Anda!",
+    text: "Anda akan keluar dari akun!",
     type: "warning",
     showCancelButton: true,
     confirmButtonColor: "#d33",
@@ -96,7 +96,7 @@ function confirmLogout(href) {
 function editProfile() {
   swal({
     title: "Hallo!",
-    text: "Fitur edit profile sedang dalam pengembangan.",
+    text: "Fitur sedang dalam pengembangan.",
     type: "info",
     confirmButtonColor: "#2885a7ff",
     closeOnConfirm: false
