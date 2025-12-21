@@ -1,3 +1,6 @@
+<?php
+session_start();
+?>
 <!DOCTYPE html>
 <html lang="en">
 
@@ -75,15 +78,28 @@
                 <div id="confirmPasswordError" class="error-message d-none">Password tidak sesuai</div>
             </div>
 
+
+            <!-- Success Message (akan muncul jika register berhasil), jika tidak maka error -->
+            <?php
+            if (isset($_SESSION['flash_error'])) {
+                echo '<div class="alert alert-danger text-center">'
+                    . $_SESSION['flash_error'] .
+                    '</div>';
+                unset($_SESSION['flash_error']);
+            }
+
+            if (isset($_SESSION['flash_success'])) {
+                echo '<div class="alert alert-success text-center">'
+                    . $_SESSION['flash_success'] .
+                    '</div>';
+                unset($_SESSION['flash_success']);
+            }
+            ?>
+
             <!-- SignUp Button -->
             <button type="submit" class="btn btn-login mb-3" name="register">Sign Up</button>
 
-            <!-- Success Message (akan muncul jika register berhasil) -->
-            <?php if (isset($_GET['signup']) && $_GET['signup'] === 'success'): ?>
-                <div id="signUpSuccess" class="alert alert-success alert-dismissible fade show" role="alert">
-                    Pendaftaran berhasil! Silakan login.
-                </div>
-            <?php endif; ?>
+
         </form>
 
         <!-- Register Link -->

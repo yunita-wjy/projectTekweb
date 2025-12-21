@@ -311,12 +311,14 @@ function updateModalContent() {
     const seatsContainer = document.getElementById('modalSeatsList');
     seatsContainer.innerHTML = '';
 
-    selectedSeats.forEach(seatId => {
-        const badge = document.createElement('div');
-        badge.className = 'seat-badge-modal';
-        badge.textContent = seatId;
-        seatsContainer.appendChild(badge);
-    });
+    const seatText = selectedSeats.join(', ');
+
+    const seatSpan = document.createElement('div');
+    seatSpan.className = 'seat-badge-modal';
+    seatSpan.textContent = seatText;
+
+    seatsContainer.appendChild(seatSpan);
+
 
     // Update ticket count and price
     document.getElementById('modalTicketCount').textContent = seatCount;

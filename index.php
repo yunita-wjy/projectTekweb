@@ -1,28 +1,30 @@
 <?php
-session_start();
+    session_start();
 
-$BASE_PATH = '/proyek/projectTekweb/';
+    $BASE_PATH = '/proyek/projectTekweb/';
 
-if (isset($_SESSION['user'])) {
-    $user = $_SESSION['user'];
-} else {
-    $user = null;
-}
+    if (isset($_SESSION['user'])) {
+        $user = $_SESSION['user'];
+    } else {
+        $user = null;
+    }
 
-require "config/connection.php";
+    require "config/connection.php";
 
-$nowShowing = mysqli_query($conn, "
-    SELECT DISTINCT
-        m.movie_id,
-        m.title,
-        m.poster_path
-    FROM showtimes s
-    JOIN movies m ON s.movie_id = m.movie_id
-    WHERE 
-        m.status = 'active'
-        AND CURDATE() BETWEEN m.start_date AND m.end_date
+    // Ambil film now showing di db
+    $nowShowing = mysqli_query($conn, "
+        SELECT DISTINCT
+            m.movie_id,
+            m.title,
+            m.poster_path,
+            m.duration
+        FROM showtimes s
+        JOIN movies m ON s.movie_id = m.movie_id
+        WHERE 
+            m.status = 'active'
+            AND CURDATE() BETWEEN m.start_date AND m.end_date
 
-");
+    ");
 
     // Ambil satu film random yang sedang tayang
     $heroMovieQuery = mysqli_query($conn, "
@@ -35,6 +37,17 @@ $nowShowing = mysqli_query($conn, "
     ");
     $heroMovie = mysqli_fetch_assoc($heroMovieQuery);
 
+    // Ambil movie coming soon di db
+    $comingSoon = mysqli_query($conn, "
+        SELECT 
+            movie_id,
+            title,
+            poster_path,
+            duration
+        FROM movies
+        WHERE status = 'coming_soon'
+        ORDER BY start_date ASC
+    ");
 
 ?>
 
@@ -157,8 +170,12 @@ $nowShowing = mysqli_query($conn, "
                             </a>
                         </div>
                     </div>
-                    <p class="mt-2 text-center fw-bold">
+                    <p class="mt-2 text-center fw-bold mb-0">
                         <?= htmlspecialchars($movie['title']) ?>
+                    </p>
+                    <p 
+                    class="text-center text-muted small movie-duration" 
+                    data-minutes="<?= (int)$movie['duration'] ?>">
                     </p>
                 </div>
             <?php endwhile; ?>
@@ -171,6 +188,48 @@ $nowShowing = mysqli_query($conn, "
         <?php endif; ?>
 
         </div>
+
+    <!-- COMING SOON -->
+    <h3 class="mb-3 mt-5">Coming Soon</h3>
+
+    <div class="row row-cols-2 row-cols-md-4 g-4">
+
+    <?php if (mysqli_num_rows($comingSoon) > 0): ?>
+        <?php while ($movie = mysqli_fetch_assoc($comingSoon)): ?>
+            <div class="col">
+                <div class="movie-card">
+                    <img 
+                        src="<?= htmlspecialchars($movie['poster_path'] ?? 'assets/movie_poster/default.jpg') ?>"
+                        alt="<?= htmlspecialchars($movie['title']) ?>">
+
+                    <!-- Overlay Coming Soon -->
+                    <div class="movie-overlay">
+                            <a href="customer/movies_detail.php?id=<?= $movie['movie_id'] ?>" 
+                            class="btn btn-secondary">
+                                Coming Soon
+                            </a>
+                    </div>
+                </div>
+
+                <p class="mt-2 text-center fw-bold mb-0">
+                    <?= htmlspecialchars($movie['title']) ?>
+                </p>
+                <p 
+                class="text-center text-muted small movie-duration" 
+                data-minutes="<?= (int)$movie['duration'] ?>">
+                </p>
+            </div>
+        <?php endwhile; ?>
+    <?php else: ?>
+        <div class="col-12">
+            <p class="text-center text-muted">
+                Belum ada film coming soon.
+            </p>
+        </div>
+    <?php endif; ?>
+
+    </div>
+
 
 
 </main>
@@ -190,6 +249,23 @@ window.addEventListener("scroll", function () {
     } else {
         header.classList.remove("scrolled");
     }
+});
+
+document.addEventListener("DOMContentLoaded", function () {
+    document.querySelectorAll(".movie-duration").forEach(el => {
+        const minutes = parseInt(el.dataset.minutes);
+
+        if (isNaN(minutes)) return;
+
+        const hours = Math.floor(minutes / 60);
+        const mins = minutes % 60;
+
+        let result = "";
+        if (hours > 0) result += hours + "h ";
+        if (mins > 0) result += mins + "m";
+
+        el.textContent = result.trim();
+    });
 });
 </script>
 
