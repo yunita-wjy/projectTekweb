@@ -223,6 +223,7 @@ function updateSelectionSummary() {
     // Update daftar kursi terpilih
     if (seatList) {
         seatList.innerHTML = '';
+
         selectedSeats.forEach(seatId => {
             const badge = document.createElement('span');
             badge.className = 'selected-seat-badge';

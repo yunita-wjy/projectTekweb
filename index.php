@@ -77,13 +77,14 @@
         .movie-card {
             position: relative;
             overflow: hidden;
-            border-radius: 10px;
-            cursor: pointer;
+            border-radius: 12px;
         }
 
         .movie-card img {
             width: 100%;
-            transition: 0.3s;
+            aspect-ratio: 2 / 3;   
+            object-fit: cover;    
+            display: block;
         }
 
         .movie-card:hover img {
@@ -234,11 +235,7 @@
 
 </main>
 
-<footer class="bg-light text-center py-4 border-top">
-    <p class="text-muted small">
-        © 2025 Kelompok 8
-    </p>
-</footer>
+<?php include("includes/footer.php"); ?>
 
 <script>
 window.addEventListener("scroll", function () {
