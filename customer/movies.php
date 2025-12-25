@@ -91,10 +91,12 @@
             position: relative;
             overflow: hidden;
             border-radius: 12px;
+            
         }
 
         .movie-card img {
             width: 100%;
+            
             aspect-ratio: 2 / 3;   
             object-fit: cover;    
             display: block;
@@ -188,7 +190,10 @@
                                 <img src="../<?= htmlspecialchars($movie['poster_path']) ?>"
                                     alt="<?= htmlspecialchars($movie['title']) ?>">
                                 <div class="movie-overlay">
-                                <span class="btn btn-secondary disabled">Coming Soon</span>
+                                        <a href="movies_detail.php?id=<?= $movie['movie_id'] ?>" 
+                                        class="btn btn-secondary">
+                                            Coming Soon
+                                        </a>
                                 </div>
                             </div>
                             <p class="mt-2 text-center fw-bold mb-0">
@@ -278,12 +283,12 @@
             });
         });
         </script>
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
     </body>
 
 
 </html>
-<link rel="stylesheet" href="assets/customer.css">
 
 
 

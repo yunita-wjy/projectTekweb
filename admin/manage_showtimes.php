@@ -39,14 +39,48 @@
     }
 
 
+
     /*==== TABLE LIST SHOWTIMES ====*/
-    $showtimes = $conn->query("
+    // $showtimes = $conn->query("
+    //     SELECT s.showtime_id,
+    //         m.title,
+    //         st.studio_name,
+    //         s.show_date,
+    //         s.start_time,
+    //         ADDTIME(s.start_time, SEC_TO_TIME(m.duration*60)) AS end_time,
+    //         CASE 
+    //             WHEN DAYOFWEEK(s.show_date) IN (1,7) 
+    //             THEN p.weekend_price 
+    //             ELSE p.weekday_price 
+    //         END AS price
+    //     FROM showtimes s
+    //     JOIN movies m ON s.movie_id = m.movie_id
+    //     JOIN studios st ON s.studio_id = st.studio_id
+    //     JOIN prices p
+    //     ORDER BY s.show_date DESC
+    // ");
+
+
+    /*==== FILTER & PAGINATION ====*/
+    $limit = 10;
+    $page = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
+    $offset = ($page - 1) * $limit;
+
+    $filter_date = $_GET['date'] ?? '';
+
+    $where = "";
+    if ($filter_date !== '') {
+        $where = "WHERE s.show_date = ?";
+    }
+
+    /*==== DATA SHOWTIMES ====*/
+    $sql = "
         SELECT s.showtime_id,
             m.title,
             st.studio_name,
             s.show_date,
             s.start_time,
-            ADDTIME(s.start_time, SEC_TO_TIME(m.duration*60)) AS end_time,
+            s.end_time,
             CASE 
                 WHEN DAYOFWEEK(s.show_date) IN (1,7) 
                 THEN p.weekend_price 
@@ -56,14 +90,47 @@
         JOIN movies m ON s.movie_id = m.movie_id
         JOIN studios st ON s.studio_id = st.studio_id
         JOIN prices p
+        $where
         ORDER BY s.show_date DESC
-    ");
+        LIMIT ? OFFSET ?
+    ";
+
+    $stmt = $conn->prepare($sql);
+
+    if ($filter_date !== '') {
+        $stmt->bind_param("sii", $filter_date, $limit, $offset);
+    } else {
+        $stmt->bind_param("ii", $limit, $offset);
+    }
+
+    $stmt->execute();
+    $showtimes = $stmt->get_result();
+
+    /*==== TOTAL DATA (UNTUK PAGINATION) ====*/
+    $countSql = "
+        SELECT COUNT(*) AS total
+        FROM showtimes s
+        JOIN movies m ON s.movie_id = m.movie_id
+        JOIN studios st ON s.studio_id = st.studio_id
+        JOIN prices p
+        $where
+    ";
+
+    $countStmt = $conn->prepare($countSql);
+    if ($filter_date !== '') {
+        $countStmt->bind_param("s", $filter_date);
+    }
+    $countStmt->execute();
+    $totalData = $countStmt->get_result()->fetch_assoc()['total'];
+    $totalPages = ceil($totalData / $limit);
+
 
     // MOVIES untuk dropdown
     $movies = $conn->query("
-        SELECT movie_id, title, duration, start_date
+        SELECT movie_id, title, duration, start_date, end_date
         FROM movies
-        WHERE status IN ('ACTIVE','COMING_SOON')
+        WHERE status = 'active'
+        AND CURDATE() BETWEEN start_date AND end_date
     ")->fetch_all(MYSQLI_ASSOC);
 
     // STUDIOS untuk dropdown
@@ -358,8 +425,18 @@
                     <div class="card mb-4 shadow-sm">
                         <div class="card-header d-flex justify-content-between align-items-center">
                             <h5 class="mb-0 fw-bold">LIST OF SHOWTIMES</h5>
-                            <form class="d-flex">
-                                <input id="searchTitle" class="form-control form-control-sm me-2" placeholder="Search Showtimes Movie..." style="width: 200px;">
+
+                            <form method="GET" class="d-flex gap-2">
+                                <input type="date"
+                                    name="date"
+                                    class="form-control form-control-sm"
+                                    value="<?= $_GET['date'] ?? '' ?>" 
+                                    onchange="this.form.submit()" >
+
+                                <input id="searchTitle"
+                                    class="form-control form-control-sm"
+                                    placeholder="Search Showtimes Movie..."
+                                    style="width: 200px;">
                             </form>
                         </div>
                         <div class="card-body p-0">
@@ -378,7 +455,7 @@
                                         </tr>
                                     </thead>
                                         <tbody id="showtimesBody">
-                                        <?php $no=1; while($row = $showtimes->fetch_assoc()): ?>
+                                        <?php $no = $offset + 1; while($row = $showtimes->fetch_assoc()): ?>
                                         <tr>
                                             <td><?= $no++ ?></td>
                                             <td><?= htmlspecialchars($row['title']) ?></td>
@@ -405,6 +482,34 @@
                                         <?php endwhile; ?>
                                         </tbody>
                                 </table>
+                                <nav class="mt-3">
+                                    <ul class="pagination justify-content-left ms-3">
+
+                                        <li class="page-item <?= ($page <= 1) ? 'disabled' : '' ?>">
+                                            <a class="page-link"
+                                            href="?page=<?= $page - 1 ?>&date=<?= $filter_date ?>">
+                                            Prev
+                                            </a>
+                                        </li>
+
+                                        <?php for ($i = 1; $i <= $totalPages; $i++): ?>
+                                            <li class="page-item <?= ($i == $page) ? 'active' : '' ?>">
+                                                <a class="page-link"
+                                                href="?page=<?= $i ?>&date=<?= $filter_date ?>">
+                                                <?= $i ?>
+                                                </a>
+                                            </li>
+                                        <?php endfor; ?>
+
+                                        <li class="page-item <?= ($page >= $totalPages) ? 'disabled' : '' ?>">
+                                            <a class="page-link"
+                                            href="?page=<?= $page + 1 ?>&date=<?= $filter_date ?>">
+                                            Next
+                                            </a>
+                                        </li>
+
+                                    </ul>
+                                </nav>
 
                             </div>
                         </div>

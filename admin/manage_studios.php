@@ -21,6 +21,36 @@
     //     }
     // }
 
+    function copySeatsFromStudio1($conn, $newStudioId) {
+        // Ambil semua seat dari studio 1
+        $result = $conn->query("
+            SELECT seat_row, seat_column 
+            FROM seats 
+            WHERE studio_id = 1
+            ORDER BY seat_row, seat_column
+        ");
+
+        if ($result->num_rows === 0) {
+            return; // safety
+        }
+
+        $stmt = $conn->prepare("
+            INSERT INTO seats (studio_id, seat_row, seat_column)
+            VALUES (?, ?, ?)
+        ");
+
+        while ($seat = $result->fetch_assoc()) {
+            $stmt->bind_param(
+                "isi",
+                $newStudioId,
+                $seat['seat_row'],
+                $seat['seat_column']
+            );
+            $stmt->execute();
+        }
+    }
+
+
     $result = mysqli_query($conn, "SELECT * FROM studios");
     $studios = mysqli_fetch_all($result, MYSQLI_ASSOC);
 
@@ -79,15 +109,38 @@
                 WHERE studio_id = ?
             ");
             $stmt->bind_param("ssi", $studio_name, $status, $studio_id);
+            $stmt->execute();
+
+            // JIKA STUDIO BELUM PUNYA SEAT -> COPY
+            $checkSeat = $conn->prepare("
+                SELECT seat_id FROM seats WHERE studio_id = ?
+            ");
+            $checkSeat->bind_param("i", $studio_id);
+            $checkSeat->execute();
+            $res = $checkSeat->get_result();
+
+            if ($res->num_rows === 0) {
+                copySeatsFromStudio1($conn, $studio_id);
+            }
+
+
         } else {
+            // INSERT STUDIO BARU
             $stmt = $conn->prepare("
                 INSERT INTO studios (studio_name, capacity, status)
                 VALUES (?, ?, ?)
             ");
             $stmt->bind_param("sis", $studio_name, $capacity, $status);
+            $stmt->execute();
+
+            // AMBIL STUDIO ID BARU
+            $newStudioId = $conn->insert_id;
+
+            // AUTO COPY SEAT DARI STUDIO 1
+            copySeatsFromStudio1($conn, $newStudioId);
         }
 
-        $stmt->execute();
+        
         header("Location: manage_studios.php");
         exit;
     }

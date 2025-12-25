@@ -14,10 +14,13 @@ const seatLayouthc = [
 ];
 
 // Tetap gunakan bookedSeats dari contoh
-const bookedSeatshc = [
-    'A3', 'A4', 'A5', 'B7', 'B8', 'C1', 'C2',
-    'D10', 'D11', 'E5', 'E6', 'F3', 'F4', 'G9',
-    'H2', 'H3'];
+// const bookedSeatshc = [
+//     'A3', 'A4', 'A5', 'B7', 'B8', 'C1', 'C2',
+//     'D10', 'D11', 'E5', 'E6', 'F3', 'F4', 'G9',
+//     'H2', 'H3'];
+
+
+
 
 // State aplikasi
 let selectedSeats = [];
@@ -27,16 +30,11 @@ const serviceFee = 2500;
 let totalPrice = 0;  // harga total seats yang dipilih
 
 
-let modalMovieData = {
-    title: 'Movie Title',
-    date: 'Date: -',
-    time: 'Time: -',
-    studio: 'Studio: -'
-};
+// let modalMovieData = window.modalMovieData || {};
 
 // Inisialisasi
 document.addEventListener('DOMContentLoaded', function () {
-    // generateSeatLayout();
+    generateSeatLayout();
     updateSelectionSummary();
 
     // Event listeners untuk tombol
@@ -118,7 +116,7 @@ function generateSeatLayout() {
 
     seating.innerHTML = '';
 
-    seatLayout.forEach(r => {
+    (window.seatLayout || seatLayouthc).forEach(r => {
         const rowDiv = document.createElement('div');
         rowDiv.className = 'row';
 
@@ -136,12 +134,19 @@ function generateSeatLayout() {
             rowDiv.innerHTML += `<div class="seat spacer"></div>`;
         }
 
+
+
         // Kursi kiri
         for (let i = 0; i < r.left; i++) {
             const seatId = `${r.row}${seatNum}`;
-            const isBooked = bookedSeats.includes(seatId);
+            const isBooked = window.bookedSeats?.includes(seatId);
             const seatClass = isBooked ? 'seat booked' : 'seat available';
-            rowDiv.innerHTML += `<div class="${seatClass}" data-seat-id="${seatId}">${seatId}</div>`;
+
+            rowDiv.innerHTML += `
+                <div class="${seatClass}" data-seat-id="${seatId}">
+                    ${seatId}
+                </div>
+            `;
             seatNum++;
         }
 
@@ -151,11 +156,17 @@ function generateSeatLayout() {
         // Kursi kanan
         for (let i = 0; i < r.right; i++) {
             const seatId = `${r.row}${seatNum}`;
-            const isBooked = bookedSeats.includes(seatId);
+            const isBooked = window.bookedSeats?.includes(seatId);
             const seatClass = isBooked ? 'seat booked' : 'seat available';
-            rowDiv.innerHTML += `<div class="${seatClass}" data-seat-id="${seatId}">${seatId}</div>`;
+
+            rowDiv.innerHTML += `
+                <div class="${seatClass}" data-seat-id="${seatId}">
+                    ${seatId}
+                </div>
+            `;
             seatNum++;
         }
+
         seating.appendChild(rowDiv);
 
         if (r.gapAfter) {
@@ -298,6 +309,12 @@ function showTransactionModal() {
 
 // Fungsi untuk update modal content
 function updateModalContent() {
+
+    if (!window.modalMovieData) {
+        console.error('modalMovieData not found');
+        return;
+    }
+
     const seatCount = selectedSeats.length;
     const ticketPrice = seatPrice * seatCount;
     totalPrice = ticketPrice + serviceFee;
@@ -307,6 +324,9 @@ function updateModalContent() {
     document.getElementById('modalShowDate').textContent = `Date: ${modalMovieData.date}`;
     document.getElementById('modalShowTime').textContent = `Time: ${modalMovieData.time}`;
     document.getElementById('modalStudio').textContent = `Studio: ${modalMovieData.studio}`;
+    if (modalMovieData.poster) {
+        document.getElementById('modalPoster').src = modalMovieData.poster;
+    }
 
     // Update seats list
     const seatsContainer = document.getElementById('modalSeatsList');
@@ -336,8 +356,9 @@ function closeTransactionModal() {
 }
 
 function confirmPaymentBtn(href) {
+    
     swal({
-        title: "Confirm Payment? (Dummy)",
+        title: "Confirm Payment?",
         text: "Make sure your selected seats are correct!",
         type: "warning",
         showCancelButton: true,
@@ -348,9 +369,9 @@ function confirmPaymentBtn(href) {
     }, function (isConfirm) {
         if (isConfirm) {
             const data = {
-                showtime_id: 1,
+                showtime_id: window.SHOWTIME_ID,
                 seats: selectedSeats,
-                total_price: totalPrice + serviceFee,
+                total_price: totalPrice,
                 tickets_qty: selectedSeats.length
             };
 
@@ -373,16 +394,16 @@ function confirmPaymentBtn(href) {
                     }
                 })
                 .then(result => {
-                    console.log('Payment result:', result);
                     if (result.success) {
-                        swal("Payment Successful!", "Your payment has been processed.", "success")
+                        swal("Payment Success!", "Booking code: " + result.booking_code, "success");
                         setTimeout(() => {
-                            window.location.href = 'seats.php?payment=success';
+                            window.location.href = "ticket.php?code=" + result.booking_code;
                         }, 1500);
                     } else {
-                        swal("Payment Failed!", result.message, "error");
+                        swal("Failed", result.message, "error");
                     }
                 })
+
             // .catch(error => {
             //     // console.error('Error:', error);
             //     swal("Payment Failed!", "An error occurred during payment.", "error");

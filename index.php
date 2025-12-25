@@ -18,12 +18,12 @@
             m.title,
             m.poster_path,
             m.duration
-        FROM showtimes s
-        JOIN movies m ON s.movie_id = m.movie_id
-        WHERE 
+        FROM movies m
+        JOIN showtimes s ON s.movie_id = m.movie_id
+        WHERE
             m.status = 'active'
             AND CURDATE() BETWEEN m.start_date AND m.end_date
-
+            AND s.show_date >= CURDATE()
     ");
 
     // Ambil satu film random yang sedang tayang
@@ -74,14 +74,20 @@
             margin-top: auto;
         }
 
+        /* .movie-item p {
+            min-height: 48px;
+        } */
+
         .movie-card {
             position: relative;
             overflow: hidden;
             border-radius: 12px;
+            width: 100%;
+            
         }
 
         .movie-card img {
-            width: 100%;
+            width: 100%;     
             aspect-ratio: 2 / 3;   
             object-fit: cover;    
             display: block;
@@ -102,9 +108,56 @@
             transition: 0.3s;
         }
 
+        .poster-wrapper {
+            width: 280px;          
+            aspect-ratio: 2 / 3;   
+        }
+
+        .poster-wrapper img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;    
+            display: block;
+        }
+
         .movie-card:hover .movie-overlay {
             opacity: 1;
         }
+
+        .movie-scroll {
+            display: flex;
+            gap: 16px;
+            overflow-x: auto;
+            scroll-behavior: smooth;
+            padding: 10px 0;
+        }
+
+        .movie-scroll::-webkit-scrollbar {
+            display: none;
+        }
+
+        .movie-item {
+            width: 280px;
+            flex-shrink: 0;
+        }
+
+        /* tombol panah */
+        .scroll-btn {
+            position: absolute;
+            top: 40%;
+            transform: translateY(-50%);
+            background: white;
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            box-shadow: 0 4px 10px rgba(0,0,0,.2);
+            z-index: 10;
+        }
+
+        .scroll-btn.left { left: -15px; }
+        .scroll-btn.right { right: -15px; }
+
     </style>
 </head>
 
@@ -153,25 +206,81 @@
 
 
     <!-- NOW SHOWING -->
-    <h3 class="mb-3">Now Showing</h3>
+    <div class="d-flex justify-content-between align-items-center mb-2">
+        <h3 class="mb-0">Now Showing</h3>
+        <a href="customer/movies.php" class="btn btn-sm btn-outline-secondary">
+            Show More →
+        </a>
+    </div>
+    
+    <div class="position-relative">
+        <!-- tombol kiri -->
+        <button class="scroll-btn left" onclick="scrollRow('nowShowingRow', -300)">
+            <i class="fas fa-chevron-left"></i>
+        </button>
 
-        <div class="row row-cols-2 row-cols-md-4 g-4">
 
-        <?php if (mysqli_num_rows($nowShowing) > 0): ?>
+        <!-- list movies -->
+        <div class="movie-scroll" id="nowShowingRow">
             <?php while ($movie = mysqli_fetch_assoc($nowShowing)): ?>
-                <div class="col">
-                    <div class="movie-card">
-                        <img 
-                            src="<?= htmlspecialchars($movie['poster_path'] ?? 'assets/movie_poster/default.jpg') ?>"
-                            alt="<?= htmlspecialchars($movie['title']) ?>">
+            <div class="movie-item">
+                <div class="movie-card poster-wrapper">
+                    <img src="<?= htmlspecialchars($movie['poster_path']) ?>">
+                    <div class="movie-overlay">
+                        <a href="customer/movies_detail.php?id=<?= $movie['movie_id'] ?>" 
+                        class="btn btn-warning">
+                            Beli Tiket
+                        </a>
+                    </div>
+                </div>
+
+                <p class="mt-3 text-center fw-bold mb-0">
+                    <?= htmlspecialchars($movie['title']) ?>
+                </p>
+                <p 
+                class="text-center text-muted small movie-duration" 
+                data-minutes="<?= (int)$movie['duration'] ?>">
+                </p>
+            </div>
+            <?php endwhile; ?>
+        </div>
+
+        <!-- tombol kanan -->
+        <button class="scroll-btn right" onclick="scrollRow('nowShowingRow', 300)">
+            <i class="fas fa-chevron-right"></i>
+        </button>
+    </div>
+
+
+    <!-- COMING SOON -->
+    <div class="d-flex justify-content-between align-items-center mb-2 mt-5">
+        <h3 class="mb-0">Coming Soon</h3>
+        <a href="customer/movies.php" class="btn btn-sm btn-outline-secondary">
+            Show More →
+        </a>
+    </div>
+
+    <div class="position-relative">
+        <!-- tombol kiri -->
+        <button class="scroll-btn left" onclick="scrollRow('comingSoonRow', -300)">
+            <i class="fas fa-chevron-left"></i>
+        </button>
+
+        <!-- list movies -->
+        <div class="movie-scroll" id="comingSoonRow">
+            <?php while ($movie = mysqli_fetch_assoc($comingSoon)): ?>
+                <div class="movie-item">
+                    <div class="movie-card poster-wrapper">
+                        <img src="<?= htmlspecialchars($movie['poster_path']) ?>">
                         <div class="movie-overlay">
                             <a href="customer/movies_detail.php?id=<?= $movie['movie_id'] ?>" 
-                            class="btn btn-warning">
-                                Beli Tiket
+                            class="btn btn-secondary">
+                                Coming Soon
                             </a>
                         </div>
                     </div>
-                    <p class="mt-2 text-center fw-bold mb-0">
+
+                    <p class="mt-3 text-center fw-bold mb-0">
                         <?= htmlspecialchars($movie['title']) ?>
                     </p>
                     <p 
@@ -180,56 +289,15 @@
                     </p>
                 </div>
             <?php endwhile; ?>
-        <?php else: ?>
-            <div class="col-12">
-                <p class="text-center text-muted">
-                    Belum ada film yang sedang tayang.
-                </p>
-            </div>
-        <?php endif; ?>
-
         </div>
 
-    <!-- COMING SOON -->
-    <h3 class="mb-3 mt-5">Coming Soon</h3>
-
-    <div class="row row-cols-2 row-cols-md-4 g-4">
-
-    <?php if (mysqli_num_rows($comingSoon) > 0): ?>
-        <?php while ($movie = mysqli_fetch_assoc($comingSoon)): ?>
-            <div class="col">
-                <div class="movie-card">
-                    <img 
-                        src="<?= htmlspecialchars($movie['poster_path'] ?? 'assets/movie_poster/default.jpg') ?>"
-                        alt="<?= htmlspecialchars($movie['title']) ?>">
-
-                    <!-- Overlay Coming Soon -->
-                    <div class="movie-overlay">
-                            <a href="customer/movies_detail.php?id=<?= $movie['movie_id'] ?>" 
-                            class="btn btn-secondary">
-                                Coming Soon
-                            </a>
-                    </div>
-                </div>
-
-                <p class="mt-2 text-center fw-bold mb-0">
-                    <?= htmlspecialchars($movie['title']) ?>
-                </p>
-                <p 
-                class="text-center text-muted small movie-duration" 
-                data-minutes="<?= (int)$movie['duration'] ?>">
-                </p>
-            </div>
-        <?php endwhile; ?>
-    <?php else: ?>
-        <div class="col-12">
-            <p class="text-center text-muted">
-                Belum ada film coming soon.
-            </p>
-        </div>
-    <?php endif; ?>
-
+        <!-- tombol kanan -->
+        <button class="scroll-btn right" onclick="scrollRow('comingSoonRow', 300)">
+            <i class="fas fa-chevron-right"></i>
+        </button>
     </div>
+
+
 
 
 
@@ -264,6 +332,13 @@ document.addEventListener("DOMContentLoaded", function () {
         el.textContent = result.trim();
     });
 });
+
+
+function scrollRow(id, value) {
+    document.getElementById(id).scrollLeft += value;
+}
+
+
 </script>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>

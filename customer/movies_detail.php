@@ -38,7 +38,7 @@ $genres = $genreQuery->get_result()->fetch_all(MYSQLI_ASSOC);
 
 // Ambil showtimes di db
 $showtimesQuery = $conn->prepare("
-    SELECT show_date, start_time
+    SELECT showtime_id, show_date, start_time
     FROM showtimes
     WHERE movie_id = ?
       AND show_date >= CURDATE()
@@ -51,7 +51,10 @@ $showtimes = $showtimesQuery->get_result()->fetch_all(MYSQLI_ASSOC);
 
 $showtimesByDate = [];
 foreach ($showtimes as $st) {
-    $showtimesByDate[$st['show_date']][] = $st['start_time'];
+    $showtimesByDate[$st['show_date']][] = [
+        'id' => $st['showtime_id'],
+        'time' => $st['start_time']
+    ];
 }
 
 
@@ -237,21 +240,21 @@ $hasShowtimes = !empty($showtimes);
                                     </option>
                                 <?php endforeach; ?>
                             </select>
-
                         </div>
 
                         <div class="col-md-6 mb-3">
                             <label class="form-label fw-bold">Showtime</label>
                             <div class="btn-group w-100" role="group" id="timeContainer">
-                                <!-- diisi JS -->
+                                <!-- radio button diisi JS -->
                             </div>
                         </div>
                     </div>
 
-                    <button type="submit" class="btn btn-warning w-100 fw-bold py-2 mt-2">
+                    <button type="submit" id="continueBtn" class="btn btn-warning w-100 fw-bold py-2 mt-2">
                         CONTINUE TO SEATS
                     </button>
                 </form>
+
 
             <?php else: ?>
                 <!-- TIDAK ADA SHOWTIME -->
@@ -279,6 +282,9 @@ $hasShowtimes = !empty($showtimes);
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
 <script>
+const NOW_DATE = "<?= date('Y-m-d') ?>";
+const NOW_TIME = "<?= date('H:i') ?>";
+
 function playTrailer(el) {
     const iframe = el.querySelector('iframe');
     const thumb = el.querySelector('.trailer-thumb');
@@ -306,25 +312,53 @@ const showtimes = <?= json_encode($showtimesByDate) ?>;
 
 const dateSelect = document.getElementById('dateSelect');
 const timeContainer = document.getElementById('timeContainer');
+const continueBtn = document.getElementById('continueBtn');
 
 function renderTimes(date) {
     timeContainer.innerHTML = '';
+    continueBtn.disabled = true;
+
     if (!showtimes[date]) return;
 
-    showtimes[date].forEach((time, index) => {
+    const now = new Date();
+    let firstEnabledChecked = false;
+
+    showtimes[date].forEach((item, index) => {
+        const showDateTime = new Date(date + ' ' + item.time);
+        const isPast = showDateTime <= now;
         const id = `t${index}`;
 
         timeContainer.innerHTML += `
-            <input type="radio" class="btn-check" name="time"
-                   id="${id}" value="${time}" ${index === 0 ? 'checked' : ''} required>
-            <label class="btn btn-outline-dark" for="${id}">
-                ${time.slice(0,5)}
+            <input type="radio" class="btn-check"
+                   name="showtime_id"
+                   id="${id}"
+                   value="${item.id}"
+                   ${isPast ? 'disabled' : ''}
+                   ${!firstEnabledChecked && !isPast ? 'checked' : ''}>
+
+            <label class="btn btn-outline-dark ${isPast ? 'disabled opacity-50' : ''}"
+                   for="${id}">
+                ${item.time.slice(0,5)}
             </label>
         `;
+
+        if (!isPast && !firstEnabledChecked) {
+            firstEnabledChecked = true;
+            continueBtn.disabled = false;
+        }
     });
+
+    if (!firstEnabledChecked) {
+        timeContainer.innerHTML = `
+            <div class="text-muted small">
+                Semua jadwal di tanggal ini sudah lewat
+            </div>
+        `;
+        continueBtn.disabled = true;
+    }
 }
 
-// render pertama kali
+// render pertama
 renderTimes(dateSelect.value);
 
 // render saat ganti tanggal
