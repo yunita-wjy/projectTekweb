@@ -140,6 +140,13 @@
         WHERE status = 'active'
     ")->fetch_all(MYSQLI_ASSOC);
 
+    // PRICE
+    $priceRow = $conn->query("SELECT weekday_price, weekend_price FROM prices LIMIT 1")
+                    ->fetch_assoc();
+
+    $weekdayPrice = (int)$priceRow['weekday_price'];
+    $weekendPrice = (int)$priceRow['weekend_price'];
+
     // DELETE SHOWTIME
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_id'])) {
         $id = (int) $_POST['delete_id'];
@@ -697,11 +704,18 @@
             });
 
             // Set price saat pilih tanggal
+            const WEEKDAY_PRICE = <?= $weekdayPrice ?>;
+            const WEEKEND_PRICE = <?= $weekendPrice ?>;
+
             document.getElementById("showing-date").addEventListener("change", function() {
-                const day = new Date(this.value).getDay(); // 0 Minggu
-                let price = (day === 5 || day === 6 || day === 0) ? 45000 : 40000;
+                const day = new Date(this.value).getDay(); // 0 = Minggu
+                const price = (day === 0 || day === 5 || day === 6 )
+                    ? WEEKEND_PRICE
+                    : WEEKDAY_PRICE;
+
                 document.getElementById("price").value = price.toLocaleString();
             });
+
 
             // Hitung End Time otomatis berdasarkan start time + duration
             document.getElementById("showtime-time").addEventListener("change", function() {

@@ -54,6 +54,7 @@ if (!$studio) {
 
 $studio_id = $studio['studio_id'];
 
+$conn->begin_transaction();
 
 // 1️) INSERT TRANSACTION
 $stmt = $conn->prepare("
@@ -100,14 +101,39 @@ foreach ($seats as $seat) {
     if ($seatResult) {
         $seat_id = $seatResult['seat_id'];
 
+        $checkSeat = $conn->prepare("
+            SELECT 1 FROM transaction_seats 
+            WHERE seat_id = ? AND showtime_id = ?
+        ");
+        $checkSeat->bind_param("ii", $seat_id, $showtime_id);
+        $checkSeat->execute();
+
+        if ($checkSeat->get_result()->num_rows > 0) {
+            $conn->rollback();
+            echo json_encode([
+                'success' => false,
+                'message' => 'Seat already booked'
+            ]);
+            exit();
+        }
+
         $insertSeat = $conn->prepare("
             INSERT INTO transaction_seats (transaction_id, seat_id, showtime_id)
             VALUES (?, ?, ?)
         ");
         $insertSeat->bind_param("iii", $transaction_id, $seat_id, $showtime_id);
-        $insertSeat->execute();
+        if (!$insertSeat->execute()) {
+            $conn->rollback();
+            echo json_encode([
+                'success' => false,
+                'message' => 'Failed to insert seat'
+            ]);
+            exit();
+        }
     }
 }
+
+$conn->commit();
 
 // 3️) RESPONSE
 echo json_encode([

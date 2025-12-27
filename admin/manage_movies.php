@@ -8,18 +8,7 @@ require "../includes/admin_auth.php";
 //     exit();
 //}
 
-// // SIMULASI LOGIN ADMIN (SEMENTARA TANPA LOGIN PAGE)
-// if (!isset($_SESSION['user'])) {
-//     $q = $conn->query("SELECT user_id, username, full_name, email, role 
-//                        FROM users 
-//                        WHERE role = 'admin' 
-//                        LIMIT 1");
-//     $admin = $q->fetch_assoc();
 
-//     if ($admin) {
-//         $_SESSION['user'] = $admin;
-//     }
-// }
 
 // helpers: flash messages
 function flash($type, $msg) {
@@ -252,7 +241,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
 
             $conn->commit();
-            flash('success', "Movie '$title' berhasil diupdate.");
+            flash('success', "Movie '$title' berhasil diupdate!");
         } catch (Exception $e) {
             $conn->rollback();
             flash('danger', 'Gagal update movie: ' . $e->getMessage());
@@ -509,7 +498,7 @@ $res2->free();
                                                 <form method="POST" class="d-inline" onsubmit="return confirm('Hapus movie ini?');">
                                                     <input type="hidden" name="action" value="delete_movie">
                                                     <input type="hidden" name="movie_id" value="<?= $m['movie_id'] ?>">
-                                                    <button class="btn btn-sm btn-danger w-100" type="submit">Delete</button>
+                                                    <button type="submit" class="btn btn-sm btn-danger w-100">Delete</button>
                                                 </form>
                                             </div>
                                         </td>
@@ -688,240 +677,353 @@ $res2->free();
 </div>
 
 <script>
-    // Search Movie 
+// ===============================
+// KONSTANTA DAN VARIABEL
+// ===============================
+const GENRES = <?= json_encode($genres) ?>;
+const MAX_GENRE = 5;
+
+// ===============================
+// SEARCH MOVIE (DEBOUNCE)
+// ===============================
+// const searchInput = document.getElementById("searchTitle");
+// const tbody = document.getElementById("movieTableBody");
+// let searchTimer = null;
+
+document.addEventListener('DOMContentLoaded', function() {
     const searchInput = document.getElementById("searchTitle");
-    const tbody = document.getElementById("movieTableBody");
-
-    let timer = null;
-
-    searchInput.addEventListener("keyup", function () {
-        clearTimeout(timer);
-
-        timer = setTimeout(() => {
-            const q = this.value;
-
-            fetch(`ajax/search_movies.php?q=${encodeURIComponent(q)}`)
-                .then(res => res.text())
-                .then(html => {
-                    tbody.innerHTML = html || `
-                        <tr>
-                            <td colspan="9" class="text-center text-muted py-4">
-                                Movie not found
-                            </td>
-                        </tr>`;
-                });
-        }, 300); // debounce
-    });
-
-
+    const tableBody = document.getElementById("movieTableBody");
     
-
-
-    function createGenreSelect() {
-        const select = document.createElement("select");
-        select.className = "form-select genre-select";
-        select.name = "genres[]";
-        select.required = true;
-        fillSelect(select);
-        return select;
+    // Inisialisasi data awal (untuk fallback)
+    const originalHTML = tableBody.innerHTML;
+    
+    // Event listener untuk live search
+    if (searchInput) {
+        let searchTimer;
+        
+        searchInput.addEventListener("keyup", function() {
+            clearTimeout(searchTimer);
+            
+            searchTimer = setTimeout(() => {
+                const query = this.value.trim();
+                
+                // Jika search kosong, kembalikan ke data awal
+                if (query === "") {
+                    tableBody.innerHTML = originalHTML;
+                    attachEditButtons(); // Re-attach button events
+                    return;
+                }
+                
+                // Lakukan AJAX search
+                performSearch(query);
+            }, 300); // Debounce 300ms
+        });
+        
+        // Juga cari saat tombol enter ditekan
+        searchInput.addEventListener("keypress", function(e) {
+            if (e.key === "Enter") {
+                e.preventDefault();
+                const query = this.value.trim();
+                performSearch(query);
+            }
+        });
     }
+    
+    // Fungsi untuk AJAX search
+    async function performSearch(query) {
+        try {
+            // Tampilkan loading
+            tableBody.innerHTML = `
+                <tr>
+                    <td colspan="9" class="text-center py-4">
+                        <div class="spinner-border spinner-border-sm text-primary me-2"></div>
+                        Searching...
+                    </td>
+                </tr>
+            `;
+            
+            // Kirim request ke server
+            const response = await fetch(`ajax/search_movies.php?q=${encodeURIComponent(query)}`);
+            const data = await response.json();
+            
+            if (data.status === 'success') {
+                // Update tabel dengan hasil search
+                tableBody.innerHTML = data.html;
+                
+                // Re-attach event listeners untuk tombol edit
+                attachEditButtons();
+            } else {
+                tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="9" class="text-center text-danger py-4">
+                            Error: ${data.msg || 'Unknown error'}
+                        </td>
+                    </tr>
+                `;
+            }
+        } catch (error) {
+            console.error("Search error:", error);
+            tableBody.innerHTML = `
+                <tr>
+                    <td colspan="9" class="text-center text-danger py-4">
+                        Connection error. Please try again.
+                    </td>
+                </tr>
+            `;
+            
+            // Fallback ke data asli
+            setTimeout(() => {
+                tableBody.innerHTML = originalHTML;
+                attachEditButtons();
+            }, 2000);
+        }
+    }
+    
+    // Fungsi untuk attach tombol edit
+    function attachEditButtons() {
+        document.querySelectorAll(".btn-edit-movie").forEach(button => {
+            button.addEventListener("click", function(e) {
+                e.preventDefault();
+                editMovie(this);
+            });
+        });
+    }
+    
+    // Panggil pertama kali untuk attach tombol edit yang ada
+    attachEditButtons();
+});
 
+// ===============================
+// GENRE MANAGEMENT - SEDERHANA
+// ===============================
+function initGenreSelect() {
+    const select = document.querySelector("[name='genres[]']");
+    if (select) {
+        // Simpan nilai yang sudah dipilih
+        const currentValue = select.value;
+        
+        // Clear dan isi ulang options
+        select.innerHTML = '<option value="" disabled>Pilih genre</option>';
+        GENRES.forEach(genre => {
+            const option = document.createElement('option');
+            option.value = genre.genre_id;
+            option.textContent = genre.genre_name;
+            if (genre.genre_id == currentValue) {
+                option.selected = true;
+            }
+            select.appendChild(option);
+        });
+    }
+}
+
+// ===============================
+// EDIT MOVIE - SEDERHANA
+// ===============================
+function editMovie(button) {
+    try {
+        const movie = JSON.parse(button.dataset.movie);
+        const form = document.getElementById("AddMovieForm");
+        
+        // Isi form dengan data movie
+        form.querySelector("[name=movie_id]").value = movie.id;
+        form.querySelector("[name=title]").value = movie.title || "";
+        form.querySelector("[name=duration]").value = movie.duration || "";
+        form.querySelector("[name=start_date]").value = movie.start_date || "";
+        form.querySelector("[name=end_date]").value = movie.end_date || "";
+        form.querySelector("[name=synopsis]").value = movie.synopsis || "";
+        form.querySelector("[name=trailer_link]").value = movie.trailer || "";
+        
+        // Handle genre (ambil yang pertama jika ada)
+        const genreSelect = form.querySelector("[name='genres[]']");
+        if (movie.genre_ids && movie.genre_ids.length > 0 && genreSelect) {
+            genreSelect.value = movie.genre_ids[0];
+        } else if (genreSelect) {
+            genreSelect.value = "";
+        }
+        
+        // Ubah mode form ke EDIT
+        const submitBtn = document.getElementById("submitMovieBtn");
+        submitBtn.textContent = "Update Movie";
+        submitBtn.className = "btn btn-warning";
+        
+        form.querySelector("[name=action]").value = "update_movie";
+        document.getElementById("cancelEditMovie").style.display = "inline-block";
+        
+        // Scroll ke form
+        form.scrollIntoView({ behavior: "smooth" });
+        
+    } catch (error) {
+        console.error("Error parsing movie data:", error);
+        alert("Error loading movie data");
+    }
+}
+
+// ===============================
+// CANCEL EDIT
+// ===============================
+function cancelEdit() {
     const form = document.getElementById("AddMovieForm");
+    
+    // Reset form
+    form.reset();
+    form.querySelector("[name=movie_id]").value = "";
+    form.querySelector("[name=action]").value = "add_movie";
+    
+    // Reset genre select
+    const genreSelect = form.querySelector("[name='genres[]']");
+    if (genreSelect) {
+        genreSelect.value = "";
+        initGenreSelect();
+    }
+    
+    // Kembalikan ke mode ADD
     const submitBtn = document.getElementById("submitMovieBtn");
-    const cancelBtn = document.getElementById("cancelEditMovie");
+    submitBtn.textContent = "Save";
+    submitBtn.className = "btn btn-success";
+    
+    document.getElementById("cancelEditMovie").style.display = "none";
+}
 
-    // EDIT MOVIE (from list table)
-    document.querySelectorAll(".btn-edit-movie").forEach(btn => {
-        btn.addEventListener("click", () => {
-            const movie = JSON.parse(btn.dataset.movie);
+// ===============================
+// DELETE MOVIE - FORM SUBMIT BIASA
+// ===============================
+// Tombol delete, flash akan muncul setelah halaman reload
 
-            // isi form text & number
-            form.querySelector("[name=movie_id]").value = movie.id;
-            form.querySelector("[name=title]").value = movie.title;
-            form.querySelector("[name=duration]").value = movie.duration;
-            form.querySelector("[name=start_date]").value = movie.start_date;
-            form.querySelector("[name=end_date]").value = movie.end_date;
-            form.querySelector("[name=synopsis]").value = movie.synopsis || "";
-            form.querySelector("[name=trailer_link]").value = movie.trailer || "";
-
-            // genres
-            const container = form.querySelector("#genre-container");
-            container.innerHTML = ""; // kosongkan dulu
-
-            movie.genre_ids.forEach((gid, index) => {
-                const row = document.createElement("div");
-                row.className = "genre-row d-flex gap-2 mt-2";
-
-                const select = createGenreSelect();
-                select.value = gid; // prefill genre
-                row.appendChild(select);
-
-                // tombol +
-                const addBtn = document.createElement("button");
-                addBtn.type = "button";
-                addBtn.className = "btn btn-primary btn-add fw-bold";
-                addBtn.textContent = "+";
-                row.appendChild(addBtn);
-
-                // tombol -
-                const removeBtn = document.createElement("button");
-                removeBtn.type = "button";
-                removeBtn.className = "btn btn-danger btn-remove fw-bold";
-                removeBtn.textContent = "-";
-                row.appendChild(removeBtn);
-
-                container.appendChild(row);
-            });
-
-            refreshButtons();
-
-            // ganti mode form
-            submitBtn.textContent = "Update";
-            submitBtn.className = "btn btn-warning";
-            form.querySelector("[name=action]").value = "update_movie";
-            cancelBtn.style.display = "inline-block";
-
-            // scroll ke form
-            form.scrollIntoView({behavior:"smooth"});
-        });
-    });
-
-    // CANCEL EDIT MOVIE
-    cancelBtn.addEventListener("click", () => {
-        form.reset();
-        form.querySelector("[name=movie_id]").value = "";
-        form.querySelector("[name=action]").value = "add_movie";
-
-        submitBtn.textContent = "Save";
-        submitBtn.className = "btn btn-success";
-        cancelBtn.style.display = "none";
-
-        // reset genre dropdown
-        const container = form.querySelector("#genre-container");
-        container.innerHTML = `
-            <div class="genre-row d-flex gap-2">
-                <select class="form-select genre-select" name="genres[]" required>
-                    <option value="" disabled selected>Pilih genre</option>
-                </select>
-                <button type="button" class="btn btn-primary btn-add fw-bold" style="font-size:16px;">+</button>
-            </div>
-        `;
-        fillSelect(container.querySelector(".genre-select"));
-        refreshButtons();
-    });
-
-    // CHOOSE GENRE (from add movie form)
-    const GENRES = <?= json_encode($genres) ?>;
-    const MAX_GENRE = 5;
-
-    document.addEventListener("DOMContentLoaded", () => {
-        const container = document.getElementById("genre-container");
-
-        // isi dropdown yg SUDAH ADA di HTML
-        fillSelect(container.querySelector(".genre-select"));
-        refreshButtons();
-
-        // EVENT CLICK (+ / -)
-        container.addEventListener("click", e => {
-
-            // ➕ TAMBAH DROPDOWN
-            if (e.target.classList.contains("btn-add")) {
-                const rows = container.querySelectorAll(".genre-row");
-                if (rows.length >= MAX_GENRE) return;
-
-                const row = document.createElement("div");
-                row.className = "genre-row d-flex gap-2 mt-2";
-
-                const select = document.createElement("select");
-                select.className = "form-select genre-select";
-                select.name = "genres[]";
-                select.required = true;
-
-                fillSelect(select);
-
-                const btnAdd = document.createElement("button");
-                btnAdd.type = "button";
-                btnAdd.className = "btn btn-primary btn-add fw-bold";
-                btnAdd.textContent = "+";
-
-                const btnRemove = document.createElement("button");
-                btnRemove.type = "button";
-                btnRemove.className = "btn btn-danger btn-remove fw-bold";
-                btnRemove.textContent = "-";
-
-                row.appendChild(select);
-                row.appendChild(btnAdd);
-                row.appendChild(btnRemove);
-
-                container.appendChild(row);
-                refreshButtons();
-            }
-
-            // HAPUS DROPDOWN
-            if (e.target.classList.contains("btn-remove")) {
-                e.target.closest(".genre-row").remove();
-                refreshButtons();
-            }
-        });
-    });
-
-    // isi option genre
-    function fillSelect(select) {
-        select.innerHTML = `<option value="" disabled selected>Pilih genre</option>`;
-        GENRES.forEach(g => {
-            const opt = document.createElement("option");
-            opt.value = g.genre_id;
-            opt.textContent = g.genre_name;
-            select.appendChild(opt);
-        });
+// ===============================
+// GENRE MULTIPLE SELECT - TAMBAHAN
+// ===============================
+// Untuk multiple select, kita butuh logika khusus
+function setupGenreMultipleSelect() {
+    const genreSelect = document.querySelector("[name='genres[]']");
+    if (genreSelect && genreSelect.multiple) {
+        // Jika select multiple, kita butuh inisialisasi khusus
+        initGenreSelect();
     }
+}
 
-    // atur tombol + dan -
-    function refreshButtons() {
-        const rows = document.querySelectorAll(".genre-row");
+// ===============================
+// FORM SUBMIT HANDLER - SEDERHANA
+// ===============================
+// Form submit secara normal, flash message bisa muncul
 
-        rows.forEach((row, index) => {
-            let btnAdd = row.querySelector(".btn-add");
-            let btnRemove = row.querySelector(".btn-remove");
-
-            // buat tombol - kalau belum ada
-            if (!btnRemove) {
-                btnRemove = document.createElement("button");
-                btnRemove.type = "button";
-                btnRemove.className = "btn btn-danger btn-remove fw-bold";
-                btnRemove.textContent = "-";
-                row.appendChild(btnRemove);
-            }
-
-            // + hanya di baris terakhir & < max
-            btnAdd.style.display =
-                (index === rows.length - 1 && rows.length < MAX_GENRE)
-                    ? "inline-block"
-                    : "none";
-
-            // - muncul kalau lebih dari 1
-            btnRemove.style.display =
-                rows.length > 1 ? "inline-block" : "none";
-        });
-    }
-
-    document.addEventListener("DOMContentLoaded", () => {
-        const editModal = new bootstrap.Modal(document.getElementById('editGenreModal'));
-
-        document.querySelectorAll(".btn-edit-genre").forEach(btn => {
-            btn.addEventListener("click", e => {
-                const tr = e.target.closest("tr");
-                const id = tr.dataset.genreId;
-                const name = tr.dataset.genreName;
-
-                document.getElementById("edit-genre-id").value = id;
-                document.getElementById("edit-genre-name").value = name;
-
+// ===============================
+// MODAL EDIT GENRE
+// ===============================
+function setupGenreModals() {
+    const editModal = new bootstrap.Modal(document.getElementById('editGenreModal'));
+    
+    document.querySelectorAll(".btn-edit-genre").forEach(btn => {
+        btn.addEventListener("click", function(e) {
+            e.preventDefault();
+            const tr = this.closest("tr");
+            if (tr) {
+                document.getElementById("edit-genre-id").value = tr.dataset.genreId || "";
+                document.getElementById("edit-genre-name").value = tr.dataset.genreName || "";
                 editModal.show();
-            });
+            }
         });
     });
+}
 
+// ===============================
+// INITIALIZATION
+// ===============================
+document.addEventListener('DOMContentLoaded', function() {
+    console.log("Initializing movie management...");
+    
+    // 1. Inisialisasi genre select
+    initGenreSelect();
+    
+    // 2. Setup genre modals
+    setupGenreModals();
+    
+    // 3. Attach edit buttons event listeners
+    document.querySelectorAll(".btn-edit-movie").forEach(btn => {
+        btn.addEventListener("click", function(e) {
+            e.preventDefault();
+            editMovie(this);
+        });
+    });
+    
+    // 4. Setup cancel button
+    const cancelBtn = document.getElementById("cancelEditMovie");
+    if (cancelBtn) {
+        cancelBtn.addEventListener("click", function(e) {
+            e.preventDefault();
+            cancelEdit();
+        });
+    }
+    
+    // 5. Setup tambah genre row (jika ada multiple select)
+    const addGenreBtn = document.querySelector(".btn-add");
+    if (addGenreBtn) {
+        addGenreBtn.addEventListener("click", function(e) {
+            e.preventDefault();
+            addGenreRow();
+        });
+    }
+    
+    // 6. Cek jika ada flash message, scroll ke atas
+    const flashMessage = document.querySelector(".alert");
+    if (flashMessage) {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+});
+
+// ===============================
+// FUNGSI TAMBAHAN UNTUK MULTIPLE GENRE
+// ===============================
+function addGenreRow() {
+    const container = document.getElementById("genre-container");
+    if (!container) return;
+    
+    const rows = container.querySelectorAll(".genre-row");
+    if (rows.length >= MAX_GENRE) {
+        alert("Maksimal " + MAX_GENRE + " genre");
+        return;
+    }
+    
+    const newRow = document.createElement("div");
+    newRow.className = "genre-row d-flex gap-2 mt-2";
+    newRow.innerHTML = `
+        <select class="form-select genre-select" name="genres[]" required>
+            <option value="" disabled selected>Pilih genre</option>
+        </select>
+        <button type="button" class="btn btn-danger btn-remove">-</button>
+    `;
+    
+    container.appendChild(newRow);
+    
+    // Isi select baru
+    const newSelect = newRow.querySelector(".genre-select");
+    initGenreSelectElement(newSelect);
+    
+    // Setup remove button
+    newRow.querySelector(".btn-remove").addEventListener("click", function() {
+        if (container.querySelectorAll(".genre-row").length > 1) {
+            newRow.remove();
+        }
+    });
+}
+
+function initGenreSelectElement(selectElement) {
+    if (!selectElement) return;
+    
+    selectElement.innerHTML = '<option value="" disabled>Pilih genre</option>';
+    GENRES.forEach(genre => {
+        const option = document.createElement('option');
+        option.value = genre.genre_id;
+        option.textContent = genre.genre_name;
+        selectElement.appendChild(option);
+    });
+}
+
+// ===============================
+// DEBUG HELPERS
+// ===============================
+window.addEventListener('error', function(e) {
+    console.error('Global error:', e.message, 'at', e.filename, ':', e.lineno);
+});
 </script>
 
 

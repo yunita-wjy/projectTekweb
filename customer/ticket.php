@@ -8,8 +8,8 @@ if (!isset($_SESSION['user'])) {
 }
 
 
-$code = $_GET['code'] ?? '';
-if (!$code) die("Invalid ticket");
+$booking_code = $_GET['booking_code'] ?? '';
+if (!$booking_code) die("Invalid ticket");
 
 /* Ambil data ticket */
 $query = "
@@ -32,7 +32,7 @@ GROUP BY t.transaction_id
 ";
 
 $stmt = $conn->prepare($query);
-$stmt->bind_param("s", $code);
+$stmt->bind_param("s", $booking_code);
 $stmt->execute();
 $data = $stmt->get_result()->fetch_assoc();
 

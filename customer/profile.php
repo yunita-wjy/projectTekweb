@@ -261,7 +261,7 @@ $histories = $stmt->get_result();
 
                         <?php if ($histories->num_rows > 0): ?>
                             <?php while ($row = $histories->fetch_assoc()): ?>
-                                <a href="ticket.php?code=<?= $row['booking_code'] ?>" 
+                                <a href="ticket.php?booking_code=<?= $row['booking_code'] ?>" 
                                 class="history-card d-block text-decoration-none text-dark">
 
                                     <div class="movie-title"><?= htmlspecialchars($row['title']) ?></div>

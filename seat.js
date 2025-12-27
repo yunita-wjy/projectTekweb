@@ -19,11 +19,13 @@ const seatLayouthc = [
 //     'D10', 'D11', 'E5', 'E6', 'F3', 'F4', 'G9',
 //     'H2', 'H3'];
 
-
+let ticketTotalPrice = 0; // harga tiket SAJA
 
 
 // State aplikasi
 let selectedSeats = [];
+const SEAT_SESSION_KEY = `selectedSeats_user_${window.USER_ID}_showtime_${window.SHOWTIME_ID}`;
+
 
 const seatPrice = 45000; // Harga per kursi
 const serviceFee = 2500;
@@ -34,7 +36,7 @@ let totalPrice = 0;  // harga total seats yang dipilih
 
 // Inisialisasi
 document.addEventListener('DOMContentLoaded', function () {
-    generateSeatLayout();
+    // generateSeatLayout();
     updateSelectionSummary();
 
     // Event listeners untuk tombol
@@ -42,40 +44,40 @@ document.addEventListener('DOMContentLoaded', function () {
     document.getElementById('continueBtn').addEventListener('click', showTransactionModal);
 
     setupModalEvents();
-    loadPreviousSelection();
+    
 });
 
-function convertSeatsToLayout(seatsFromDB) {
-  // Cari semua row unik (urutkan dari H ke A supaya sama kayak contoh)
-  const allRows = [...new Set(seatsFromDB.map(s => s.row))].sort().reverse();
+// function convertSeatsToLayout(seatsFromDB) {
+//   // Cari semua row unik (urutkan dari H ke A supaya sama kayak contoh)
+//   const allRows = [...new Set(seatsFromDB.map(s => s.row))].sort().reverse();
 
-  // Default total kursi per row
-  const totalSeatsPerRow = 15;
+//   // Default total kursi per row
+//   const totalSeatsPerRow = 15;
 
-  // Buat array hasil seatLayout
-  const seatLayout = allRows.map(row => {
-    // Filter semua kursi yang ada di row ini
-    const seatsInRow = seatsFromDB.filter(s => s.row === row);
+//   // Buat array hasil seatLayout
+//   const seatLayout = allRows.map(row => {
+//     // Filter semua kursi yang ada di row ini
+//     const seatsInRow = seatsFromDB.filter(s => s.row === row);
 
-    // Hitung kursi kiri (col <= 7)
-    const rightCount = 8;
+//     // Hitung kursi kiri (col <= 7)
+//     const rightCount = 8;
 
-    // Hitung kursi kanan
-    const leftCount = seatsInRow.length - rightCount;
+//     // Hitung kursi kanan
+//     const leftCount = seatsInRow.length - rightCount;
 
-    // Kalau row tertentu mau kasih gapAfter (misal 'E'), bisa juga di-handle sini
-    const gapAfter = (row === 'E'); // sesuaikan kalau mau yang lain
+//     // Kalau row tertentu mau kasih gapAfter (misal 'E'), bisa juga di-handle sini
+//     const gapAfter = (row === 'E'); // sesuaikan kalau mau yang lain
 
-    return {
-      row: row,
-      left: leftCount,
-      right: rightCount,
-      ...(gapAfter ? { gapAfter: true } : {})
-    };
-  });
+//     return {
+//       row: row,
+//       left: leftCount,
+//       right: rightCount,
+//       ...(gapAfter ? { gapAfter: true } : {})
+//     };
+//   });
 
-  return seatLayout;
-}
+//   return seatLayout;
+// }
 
 
 function setupModalEvents() {
@@ -184,6 +186,9 @@ function generateSeatLayout() {
 
 function handleSeatClick(event) {
     const seat = event.currentTarget;
+
+    if (seat.classList.contains('booked')) return;
+
     const seatId = seat.getAttribute('data-seat-id');
 
     // Cek apakah kursi sudah dipilih
@@ -267,30 +272,55 @@ function clearSelection() {
 
 function saveSelectionToSession() {
     // Simpan ke sessionStorage untuk persistensi sementara
-    sessionStorage.setItem('selectedSeats', JSON.stringify(selectedSeats));
+    sessionStorage.setItem(SEAT_SESSION_KEY, JSON.stringify(selectedSeats));
 }
 
 function loadPreviousSelection() {
-    // Load dari sessionStorage
-    const savedSeats = sessionStorage.getItem('selectedSeats');
-    if (savedSeats) {
-        try {
-            const parsedSeats = JSON.parse(savedSeats);
-            // Validasi dan apply seleksi
-            parsedSeats.forEach(seatId => {
-                const seatElement = document.querySelector(`[data-seat-id="${seatId}"]`);
-                if (seatElement && !seatElement.classList.contains('booked')) {
-                    seatElement.classList.add('selected');
-                    seatElement.classList.remove('available');
+    selectedSeats = [];
+    const savedSeats = sessionStorage.getItem(SEAT_SESSION_KEY);
+    if (!savedSeats) return;
+
+    try {
+        const parsedSeats = JSON.parse(savedSeats);
+
+        parsedSeats.forEach(seatId => {
+            const seatElement = document.querySelector(`[data-seat-id="${seatId}"]`);
+            if (seatElement && !seatElement.classList.contains('booked')) {
+                seatElement.classList.add('selected');
+                seatElement.classList.remove('available');
+
+                if (!selectedSeats.includes(seatId)) {
                     selectedSeats.push(seatId);
                 }
-            });
-            updateSelectionSummary();
-        } catch (e) {
-            console.error('Error loading saved seats:', e);
-        }
+            }
+        });
+
+        updateSelectionSummary();
+    } catch (e) {
+        console.error('Error loading previous seats:', e);
     }
 }
+
+
+// sessionStorage.getItem('selectedSeats');
+//     if (savedSeats) {
+//         try {
+//             const parsedSeats = JSON.parse(savedSeats);
+//             // Validasi dan apply seleksi
+//             parsedSeats.forEach(seatId => {
+//                 const seatElement = document.querySelector(`[data-seat-id="${seatId}"]`);
+//                 if (seatElement && !seatElement.classList.contains('booked')) {
+//                     seatElement.classList.add('selected');
+//                     seatElement.classList.remove('available');
+//                     selectedSeats.push(seatId);
+//                 }
+//             });
+//             updateSelectionSummary();
+//         } catch (e) {
+//             console.error('Error loading saved seats:', e);
+//         }
+//     }
+
 
 // Fungsi untuk show transaction modal
 function showTransactionModal() {
@@ -317,7 +347,9 @@ function updateModalContent() {
 
     const seatCount = selectedSeats.length;
     const ticketPrice = seatPrice * seatCount;
+    ticketTotalPrice = ticketPrice;
     totalPrice = ticketPrice + serviceFee;
+
 
     // Update movie info
     document.getElementById('modalMovieTitle').textContent = modalMovieData.title;
@@ -371,9 +403,11 @@ function confirmPaymentBtn(href) {
             const data = {
                 showtime_id: window.SHOWTIME_ID,
                 seats: selectedSeats,
+                ticket_price: ticketTotalPrice, 
                 total_price: totalPrice,
                 tickets_qty: selectedSeats.length
             };
+
 
             fetch(href, {
                 method: 'POST',
@@ -395,11 +429,21 @@ function confirmPaymentBtn(href) {
                 })
                 .then(result => {
                     if (result.success) {
-                        swal("Payment Success!", "Booking code: " + result.booking_code, "success");
-                        setTimeout(() => {
-                            window.location.href = "ticket.php?code=" + result.booking_code;
-                        }, 1500);
-                    } else {
+                        sessionStorage.removeItem(SEAT_SESSION_KEY);
+                        selectedSeats = [];
+
+                        swal({
+                            title: "Payment Success!",
+                            text: "Booking code: " + result.booking_code,
+                            type: "success",
+                            confirmButtonText: "View Ticket",
+                            closeOnConfirm: true
+                        }, function () {
+                            window.location.href =
+                                "ticket.php?booking_code=" + result.booking_code;
+                        });
+                    } 
+                    else {
                         swal("Failed", result.message, "error");
                     }
                 })

@@ -44,24 +44,24 @@ if (!$detail) {
     die("Data showtime tidak valid");
 }
 
-// Booked Seats
-$showtime_id = $_GET['showtime_id'] ?? 0;
+// // Booked Seats
+// $showtime_id = $_GET['showtime_id'] ?? 0;
 
-// ambil kursi yang sudah dibooking
-$stmt = $conn->prepare("
-    SELECT s.seat_row, s.seat_column
-    FROM transaction_seats ts
-    JOIN seats s ON ts.seat_id = s.seat_id
-    WHERE ts.showtime_id = ?
-");
-$stmt->bind_param("i", $showtime_id);
-$stmt->execute();
-$result = $stmt->get_result();
+// // ambil kursi yang sudah dibooking
+// $stmt = $conn->prepare("
+//     SELECT s.seat_row, s.seat_column
+//     FROM transaction_seats ts
+//     JOIN seats s ON ts.seat_id = s.seat_id
+//     WHERE ts.showtime_id = ?
+// ");
+// $stmt->bind_param("i", $showtime_id);
+// $stmt->execute();
+// $result = $stmt->get_result();
 
-$bookedSeats = [];
-while ($row = $result->fetch_assoc()) {
-    $bookedSeats[] = $row['seat_row'] . $row['seat_column'];
-}
+// $bookedSeats = [];
+// while ($row = $result->fetch_assoc()) {
+//     $bookedSeats[] = $row['seat_row'] . $row['seat_column'];
+// }
 
 
 
@@ -136,9 +136,9 @@ while ($row = $result->fetch_assoc()) {
                     fetch(`backend/booked_seats.php?showtime_id=${window.SHOWTIME_ID}`)
                         .then(res => res.json())
                         .then(data => {
-                            console.log('Booked seats:', data.bookedSeats);
                             window.bookedSeats = data.bookedSeats || [];
                             generateSeatLayout();
+                            loadPreviousSelection();
                         })
                         .catch(err => console.error(err));
                 });
@@ -298,8 +298,9 @@ while ($row = $result->fetch_assoc()) {
         'studio' => $detail['studio_name']
     ]) ?>;
 
-
+    window.USER_ID = <?= (int)$user['user_id'] ?>;
     window.SHOWTIME_ID = <?= (int)$showtime_id ?>;
+
 
 
 </script>
