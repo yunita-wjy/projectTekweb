@@ -42,33 +42,32 @@
 
     // TICKETS SOLD TODAY (hanya PAID)
     $q = $conn->query("
-        SELECT COUNT(t.ticket_id) total
-        FROM tickets t
-        JOIN transactions tr ON t.transaction_id = tr.transaction_id
-        JOIN showtimes s ON t.showtime_id = s.showtime_id
-        WHERE tr.status = 'PAID'
-        AND s.show_date = CURDATE()
+        SELECT COUNT(*) AS tickets_today
+        FROM transaction_seats ts
+        JOIN transactions t ON ts.transaction_id = t.transaction_id
+        WHERE t.status = 'paid'
+        AND DATE(t.created_at) = CURDATE();
     ");
-    $ticketsSoldToday = $q->fetch_assoc()['total'] ?? 0;
+    $ticketsSoldToday = $q->fetch_assoc()['tickets_today'] ?? 0;
 
     // RECENT TRANSACTIONS (5 terakhir)
     $recentTransactions = [];
-    $q = $conn->query("
+    $result = $conn->query("
         SELECT 
-            tr.created_at,
+            t.transaction_id,
+            t.created_at,
             u.username,
-            m.title
-        FROM transactions tr
-        JOIN users u ON tr.user_id = u.user_id
-        JOIN tickets t ON tr.transaction_id = t.transaction_id
+            m.title AS movie_title,
+            s.start_time
+        FROM transactions t
+        JOIN users u ON t.user_id = u.user_id
         JOIN showtimes s ON t.showtime_id = s.showtime_id
         JOIN movies m ON s.movie_id = m.movie_id
-        WHERE tr.status = 'PAID'
-        GROUP BY tr.transaction_id
-        ORDER BY tr.created_at DESC
+        WHERE t.status = 'paid'
+        ORDER BY t.created_at DESC
         LIMIT 5
     ");
-    while($row = $q->fetch_assoc()){
+    while($row = $result->fetch_assoc()){
         $recentTransactions[] = $row;
     }
 
@@ -76,19 +75,20 @@
     $dailySales = [];
     $q = $conn->query("
         SELECT 
-            s.show_date,
-            COUNT(t.ticket_id) total
-        FROM tickets t
-        JOIN transactions tr ON t.transaction_id = tr.transaction_id
-        JOIN showtimes s ON t.showtime_id = s.showtime_id
-        WHERE tr.status = 'PAID'
-        AND s.show_date >= CURDATE() - INTERVAL 6 DAY
-        GROUP BY s.show_date
-        ORDER BY s.show_date ASC
+            DATE(t.created_at) AS sale_date,
+            COUNT(*) AS total
+        FROM transactions t
+        JOIN transaction_seats ts 
+            ON t.transaction_id = ts.transaction_id
+        WHERE t.status = 'paid'
+        GROUP BY DATE(t.created_at)
+        ORDER BY sale_date
     ");
     while($row = $q->fetch_assoc()){
         $dailySales[] = $row;
     }
+
+    
 
 
     
@@ -103,8 +103,7 @@
         <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
-        <!-- jQuery library -->
-        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+       
 
         <!-- Chartist -->
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/chartist.js/latest/chartist.min.css">
@@ -117,9 +116,98 @@
             .sidebar a { color: #fff; text-decoration:none; }
             .sidebar .nav-link.active { background: rgba(255,255,255,0.06); font-weight:700; color:var(--accent); }
             .sidebar .nav-link:not(.active):hover { color: #ff4c29; }
-            .card-title.bg-primary { background:#0d6efd !important; } /* keep bootstrap */
+            .card-title.bg-primary { background: #4ecdc4 !important; } /* keep bootstrap */
             .poster-thumb { width: 60px; height: 80px; object-fit:cover; border-radius:4px; }
             .required { color: #dc3545; }
+            .ct-point {
+                stroke-width: 6px;
+            }
+
+
+
+            .chart-card {
+                background: #ffffff;
+                border-radius: 18px;
+                padding: 20px 22px;
+                box-shadow: 0 12px 30px rgba(0,0,0,0.08);
+                height: 250px;   /* 👈 tinggi card */
+            }
+
+            .chart-card .ct-chart {
+                height: 100%;   /* 👈 chart isi penuh card */
+            }
+
+
+            .chart-title {
+                font-weight: 600;
+                margin-bottom: 15px;
+                color: #0f172a;
+            }
+
+            /* Chartist Custom */
+            .ct-series-a .ct-line {
+                stroke: #38b2ac;
+                stroke-width: 4px;
+            }
+
+            .ct-series-a .ct-point {
+                stroke: #38b2ac;
+                stroke-width: 8px;
+            }
+
+            .ct-area {
+                fill: rgba(56, 178, 172, 0.25);
+            }
+
+            .ct-label {
+                font-size: 12px;
+                color: #6b7280;
+            }
+
+
+
+            .stat-card {
+                display: flex;
+                align-items: center;
+                padding: 28px;
+                border-radius: 18px;
+                color: #ffffff;
+                height: 140px;
+                box-shadow: 0 12px 28px rgba(0,0,0,0.15);
+                transition: all 0.25s ease;
+                background: linear-gradient(
+                    135deg,
+                    #38b2ac,
+                    #2c9a94
+                );
+            }
+
+            .stat-card:hover {
+                transform: translateY(-6px);
+                box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+            }
+
+            .stat-icon {
+                font-size: 48px;
+                margin-right: 20px;
+                opacity: 0.95;
+            }
+
+            .stat-info h2 {
+                font-size: 42px;
+                font-weight: 800;
+                margin: 0;
+                line-height: 1;
+            }
+
+            .stat-info p {
+                margin-top: 6px;
+                font-size: 14px;
+                letter-spacing: 0.6px;
+                opacity: 0.9;
+                text-transform: uppercase;
+            }
+
         </style>
     </head>
 
@@ -201,34 +289,40 @@
 
                 <h1 class="p-4">Welcome, Admin!</h1>
 
-                <div class="d-flex justify-content-center gap-5 flex-wrap">
-                    <div class="card shadow-sm text-center" style="width: 300px; height: 200px;">
-                        <div class="card-body d-flex flex-column justify-content-center align-items-center bg-info text-white">
-                            <h2 class="fw-bold mb-4" style="font-size: 40px">
-                                <?= $moviesNowShowing ?>
-                            </h2>
-                            <p class="mb-0 text-white" style="font-size: 20px;">MOVIES NOW SHOWING</p>
+                <div class="row g-4 mb-5 mx-2">
+
+                    <div class="col-12 col-md-4">
+                        <div class="stat-card theme-accent">
+                            <div class="stat-icon">🎬</div>
+                            <div class="stat-info">
+                                <h2><?= $moviesNowShowing ?></h2>
+                                <p>Movies Now Showing</p>
+                            </div>
                         </div>
                     </div>
 
-                    <div class="card shadow-sm text-center" style="width: 300px; height: 200px;">
-                        <div class="card-body d-flex flex-column justify-content-center align-items-center bg-info text-white">
-                            <h2 class="fw-bold mb-4" style="font-size: 40px">
-                                <?= $showtimesToday ?>
-                            </h2>
-                            <p class="mb-0 text-white"  style="font-size: 20px;">SHOWTIMES TODAY</p>
+                    <div class="col-12 col-md-4">
+                        <div class="stat-card theme-accent">
+                            <div class="stat-icon">⏰</div>
+                            <div class="stat-info">
+                                <h2><?= $showtimesToday ?></h2>
+                                <p>Showtimes Today</p>
+                            </div>
                         </div>
                     </div>
 
-                    <div class="card shadow-sm text-center" style="width: 300px; height: 200px;">
-                        <div class="card-body d-flex flex-column justify-content-center align-items-center bg-info text-white">
-                            <h2 class="fw-bold mb-4" style="font-size: 40px">
-                                <?= $ticketsSoldToday ?>
-                            </h2>
-                            <p class="mb-0  text-white"  style="font-size: 20px;" >TICKETS SOLD TODAY</p>
+                    <div class="col-12 col-md-4">
+                        <div class="stat-card theme-accent">
+                            <div class="stat-icon">🎟️</div>
+                            <div class="stat-info">
+                                <h2><?= $ticketsSoldToday ?></h2>
+                                <p>Tickets Sold Today</p>
+                            </div>
                         </div>
                     </div>
+
                 </div>
+
 
                 
                     
@@ -238,7 +332,7 @@
                     <!-- recent transactions -->
                     <div class="col-12 col-sm-12 col-md-6 col-lg-8 mb-4">
                         <h3 class="mb-3">Recent Transactions</h3>
-                        <table class="table table-striped">
+                        <table class="table table-hover align-middle custom-table">
                             <thead>
                                 <tr>
                                     <th>No</th>
@@ -249,52 +343,52 @@
                                 </tr>
                             </thead>
                             <tbody>
-                            <?php if(count($recentTransactions) > 0): ?>
-                                <?php foreach($recentTransactions as $i => $t): ?>
+                                <?php if(count($recentTransactions) > 0): ?>
+                                    <?php foreach($recentTransactions as $i => $t): ?>
+                                        <tr>
+                                            <td><?= $i + 1 ?></td>
+                                            <td><?= date('d M Y', strtotime($t['created_at'])) ?></td>
+                                            <td><?= date('H:i', strtotime($t['start_time'])) ?></td>
+                                            <td><?= htmlspecialchars($t['username']) ?></td>
+                                            <td><?= htmlspecialchars($t['movie_title']) ?></td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                <?php else: ?>
                                     <tr>
-                                        <td><?= $i + 1 ?></td>
-                                        <td><?= date('Y-m-d', strtotime($t['created_at'])) ?></td>
-                                        <td><?= date('H:i', strtotime($t['created_at'])) ?></td>
-                                        <td><?= htmlspecialchars($t['username']) ?></td>
-                                        <td><?= htmlspecialchars($t['title']) ?></td>
+                                        <td colspan="5" class="text-center text-muted">
+                                            No transactions today
+                                        </td>
                                     </tr>
-                                <?php endforeach; ?>
-                            <?php else: ?>
-                                <tr>
-                                    <td colspan="5" class="text-center text-muted">
-                                        No transactions today
-                                    </td>
-                                </tr>
-                            <?php endif; ?>
+                                <?php endif; ?>
                             </tbody>
                         </table>
 
-                        <button class="btn btn-primary rounded-2">Show More</button>
+
+                        <a href="transactions.php" class="btn btn-primary rounded-2">Show More</a>
                     </div>
 
                     <!-- daily ticket sales -->
-                    <div class="col-12 col-sm-12 col-md-6 col-lg-4 mb-4">
+                    <div class="col-12 col-sm-12 col-md-6 col-lg-4 mb-4" > 
                         <h3 class="mb-3">Daily Ticket Sales</h3>
                         <!-- Chart container tanpa card -->
-                        <div style="
+                        <div class="chart-card py-3">
+                            <div id="ticket-sales-chart" class="ct-chart"></div>
+                        </div>
+                        <!-- <div style="
                             background: white;
                             border-radius: 8px;
                             padding: 20px;
                             border: 1px solid #ddd;
                             min-height: 300px;
                         ">
-                            <div id="ticket-sales-chart" style="height: 250px;"></div>
+                            <div id="ticket-sales-chart" class="ct-chart" style="height:250px;"></div> -->
 
-                        <!-- BUTUH AMBIL DATA LEWAT PHP -->
-                            <!-- <div class="card">
-                            <div class="card-body">
-                                <div id="ticket-sales-chart"></div>
-                            </div>
-                        </div> -->
+
 
                     </div>
                 </div>
             </div>
+
 
 
             
@@ -318,20 +412,23 @@
     <script>
         const salesData = <?= json_encode($dailySales) ?>;
 
-        const labels = salesData.map(d => d.show_date);
-        const series = [ salesData.map(d => d.total) ];
+        if (salesData.length > 0) {
+            const labels = salesData.map(d => d.sale_date);
+            const series = [ salesData.map(d => Number(d.total)) ];
 
-        new Chartist.Line('#ticket-sales-chart', {
-            labels: labels,
-            series: series
-        }, {
-            low: 0,
-            showArea: true,
-            fullWidth: true,
-            chartPadding: {
-                right: 30
-            }
-        });
+            new Chartist.Line('#ticket-sales-chart', {
+                labels: labels,
+                series: series
+            }, {
+                low: 0,
+                showArea: true,
+                showPoint: true,
+                fullWidth: true,
+                chartPadding: { right: 30 },
+                axisY: { onlyInteger: true }
+            });
+        }
+        
     </script>
 
 </body>

@@ -8,21 +8,85 @@
     //     exit();
     // }
 
-    // SIMULASI LOGIN ADMIN (sementara, tanpa login page)
-    // if (!isset($_SESSION['user'])) {
-    //     $q = $conn->query("SELECT user_id, username, full_name, email, role 
-    //                     FROM users 
-    //                     WHERE role = 'admin' 
-    //                     LIMIT 1");
-    //     $admin = $q->fetch_assoc();
+    // SEARCH STUDIOS
+    $q = $_GET['q'] ?? '';
 
-    //     if ($admin) {
-    //         $_SESSION['user'] = $admin;
-    //     }
-    // }
+    $where = "";
+    $params = [];
+    $types = "";
 
-    $result = mysqli_query($conn, "SELECT * FROM studios");
-    $studios = mysqli_fetch_all($result, MYSQLI_ASSOC);
+    if($q){
+        $where = "WHERE studio_name LIKE ?";
+        $params[] = "%$q%";
+        $types .= "s";
+    }
+
+    $stmt = $conn->prepare("SELECT * FROM studios $where ORDER BY studio_id ASC");
+    if($params){
+        $stmt->bind_param($types, ...$params);
+    }
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $studios = $result->fetch_all(MYSQLI_ASSOC);
+
+    function copySeatsFromStudio1($conn, $newStudioId) {
+        // Ambil semua seat dari studio 1
+        $result = $conn->query("
+            SELECT seat_row, seat_column 
+            FROM seats 
+            WHERE studio_id = 1
+            ORDER BY seat_row, seat_column
+        ");
+
+        if ($result->num_rows === 0) {
+            return; // safety
+        }
+
+        $stmt = $conn->prepare("
+            INSERT INTO seats (studio_id, seat_row, seat_column)
+            VALUES (?, ?, ?)
+        ");
+
+        while ($seat = $result->fetch_assoc()) {
+            $stmt->bind_param(
+                "isi",
+                $newStudioId,
+                $seat['seat_row'],
+                $seat['seat_column']
+            );
+            $stmt->execute();
+        }
+    }
+
+    if(!empty($_SERVER['HTTP_X_REQUESTED_WITH']) &&
+    strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') {
+
+        if(count($studios) > 0){
+            foreach($studios as $index => $studio){
+                echo "<tr>
+                        <td>".($index+1)."</td>
+                        <td>".htmlspecialchars($studio['studio_name'])."</td>
+                        <td>{$studio['capacity']}</td>
+                        <td>".($studio['status']==='active'
+                                ? '<span class="badge bg-success">Active</span>'
+                                : '<span class="badge bg-secondary">Inactive</span>')."</td>
+                        <td>
+                            <a href='manage_studios.php?edit={$studio['studio_id']}' class='btn btn-warning btn-sm'>Edit</a>
+                            <form method='POST' style='display:inline;'>
+                                <input type='hidden' name='delete_id' value='{$studio['studio_id']}'>
+                                <button type='submit' class='btn btn-danger btn-sm' onclick=\"return confirm('Hapus studio ini?')\">Delete</button>
+                            </form>
+                        </td>
+                    </tr>";
+            }
+        } else {
+            echo "<tr><td colspan='5' class='text-center'>Belum ada studio</td></tr>";
+        }
+
+        exit;
+    }
+
+
 
     // DELETE STUDIO 
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_id'])) {
@@ -79,15 +143,38 @@
                 WHERE studio_id = ?
             ");
             $stmt->bind_param("ssi", $studio_name, $status, $studio_id);
+            $stmt->execute();
+
+            // JIKA STUDIO BELUM PUNYA SEAT -> COPY
+            $checkSeat = $conn->prepare("
+                SELECT seat_id FROM seats WHERE studio_id = ?
+            ");
+            $checkSeat->bind_param("i", $studio_id);
+            $checkSeat->execute();
+            $res = $checkSeat->get_result();
+
+            if ($res->num_rows === 0) {
+                copySeatsFromStudio1($conn, $studio_id);
+            }
+
+
         } else {
+            // INSERT STUDIO BARU
             $stmt = $conn->prepare("
                 INSERT INTO studios (studio_name, capacity, status)
                 VALUES (?, ?, ?)
             ");
             $stmt->bind_param("sis", $studio_name, $capacity, $status);
+            $stmt->execute();
+
+            // AMBIL STUDIO ID BARU
+            $newStudioId = $conn->insert_id;
+
+            // AUTO COPY SEAT DARI STUDIO 1
+            copySeatsFromStudio1($conn, $newStudioId);
         }
 
-        $stmt->execute();
+        
         header("Location: manage_studios.php");
         exit;
     }
@@ -118,8 +205,8 @@
         <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
-        <!-- jQuery library -->
-        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+        <!-- jQuery library
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script> -->
         <style>
             :root{ --accent: #4ecdc4; }
             body { background: #f8f9fb; }
@@ -210,7 +297,6 @@
                             <h5 class="mb-0 fw-bold">LIST OF STUDIOS</h5>
                             <form class="d-flex">
                                 <input id="searchTitle" class="form-control form-control-sm me-2" placeholder="Search Studio..." style="width: 200px;">
-                                <button id="btnSearch" class="btn btn-outline-primary btn-sm" type="button" >Search</button>
                             </form>
                         </div>
                         <div class="card-body p-0">
@@ -353,7 +439,33 @@
 
 
 
-        
+        <script>
+        const searchInput = document.getElementById("searchTitle");
+        const tbody = document.querySelector("table tbody");
+
+        let timer = null;
+
+        function fetchStudios() {
+            const q = searchInput.value;
+
+            const params = new URLSearchParams();
+            if(q) params.append("q", q);
+
+            fetch("manage_studios.php?" + params.toString(), {
+                headers: {"X-Requested-With": "XMLHttpRequest"}
+            })
+            .then(res => res.text())
+            .then(html => {
+                tbody.innerHTML = html; // langsung insert <tr> yang dikirim PHP
+            });
+        }
+
+        searchInput.addEventListener("keyup", () => {
+            clearTimeout(timer);
+            timer = setTimeout(fetchStudios, 300);
+        });
+        </script>
+
 
         
 

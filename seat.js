@@ -14,25 +14,25 @@ const seatLayouthc = [
 ];
 
 // Tetap gunakan bookedSeats dari contoh
-const bookedSeatshc = [
-    'A3', 'A4', 'A5', 'B7', 'B8', 'C1', 'C2',
-    'D10', 'D11', 'E5', 'E6', 'F3', 'F4', 'G9',
-    'H2', 'H3'];
+// const bookedSeatshc = [
+//     'A3', 'A4', 'A5', 'B7', 'B8', 'C1', 'C2',
+//     'D10', 'D11', 'E5', 'E6', 'F3', 'F4', 'G9',
+//     'H2', 'H3'];
+
+let ticketTotalPrice = 0; // harga tiket SAJA
+
 
 // State aplikasi
 let selectedSeats = [];
+const SEAT_SESSION_KEY = `selectedSeats_user_${window.USER_ID}_showtime_${window.SHOWTIME_ID}`;
 
-const seatPrice = 35000; // Harga per kursi
+
+const seatPrice = 45000; // Harga per kursi
 const serviceFee = 2500;
 let totalPrice = 0;  // harga total seats yang dipilih
 
 
-let modalMovieData = {
-    title: 'Movie Title',
-    date: 'Date: -',
-    time: 'Time: -',
-    studio: 'Studio: -'
-};
+// let modalMovieData = window.modalMovieData || {};
 
 // Inisialisasi
 document.addEventListener('DOMContentLoaded', function () {
@@ -44,40 +44,40 @@ document.addEventListener('DOMContentLoaded', function () {
     document.getElementById('continueBtn').addEventListener('click', showTransactionModal);
 
     setupModalEvents();
-    loadPreviousSelection();
+    
 });
 
-function convertSeatsToLayout(seatsFromDB) {
-  // Cari semua row unik (urutkan dari H ke A supaya sama kayak contoh)
-  const allRows = [...new Set(seatsFromDB.map(s => s.row))].sort().reverse();
+// function convertSeatsToLayout(seatsFromDB) {
+//   // Cari semua row unik (urutkan dari H ke A supaya sama kayak contoh)
+//   const allRows = [...new Set(seatsFromDB.map(s => s.row))].sort().reverse();
 
-  // Default total kursi per row
-  const totalSeatsPerRow = 15;
+//   // Default total kursi per row
+//   const totalSeatsPerRow = 15;
 
-  // Buat array hasil seatLayout
-  const seatLayout = allRows.map(row => {
-    // Filter semua kursi yang ada di row ini
-    const seatsInRow = seatsFromDB.filter(s => s.row === row);
+//   // Buat array hasil seatLayout
+//   const seatLayout = allRows.map(row => {
+//     // Filter semua kursi yang ada di row ini
+//     const seatsInRow = seatsFromDB.filter(s => s.row === row);
 
-    // Hitung kursi kiri (col <= 7)
-    const rightCount = 8;
+//     // Hitung kursi kiri (col <= 7)
+//     const rightCount = 8;
 
-    // Hitung kursi kanan
-    const leftCount = seatsInRow.length - rightCount;
+//     // Hitung kursi kanan
+//     const leftCount = seatsInRow.length - rightCount;
 
-    // Kalau row tertentu mau kasih gapAfter (misal 'E'), bisa juga di-handle sini
-    const gapAfter = (row === 'E'); // sesuaikan kalau mau yang lain
+//     // Kalau row tertentu mau kasih gapAfter (misal 'E'), bisa juga di-handle sini
+//     const gapAfter = (row === 'E'); // sesuaikan kalau mau yang lain
 
-    return {
-      row: row,
-      left: leftCount,
-      right: rightCount,
-      ...(gapAfter ? { gapAfter: true } : {})
-    };
-  });
+//     return {
+//       row: row,
+//       left: leftCount,
+//       right: rightCount,
+//       ...(gapAfter ? { gapAfter: true } : {})
+//     };
+//   });
 
-  return seatLayout;
-}
+//   return seatLayout;
+// }
 
 
 function setupModalEvents() {
@@ -118,7 +118,7 @@ function generateSeatLayout() {
 
     seating.innerHTML = '';
 
-    seatLayout.forEach(r => {
+    (window.seatLayout || seatLayouthc).forEach(r => {
         const rowDiv = document.createElement('div');
         rowDiv.className = 'row';
 
@@ -136,12 +136,19 @@ function generateSeatLayout() {
             rowDiv.innerHTML += `<div class="seat spacer"></div>`;
         }
 
+
+
         // Kursi kiri
         for (let i = 0; i < r.left; i++) {
             const seatId = `${r.row}${seatNum}`;
-            const isBooked = bookedSeats.includes(seatId);
+            const isBooked = window.bookedSeats?.includes(seatId);
             const seatClass = isBooked ? 'seat booked' : 'seat available';
-            rowDiv.innerHTML += `<div class="${seatClass}" data-seat-id="${seatId}">${seatId}</div>`;
+
+            rowDiv.innerHTML += `
+                <div class="${seatClass}" data-seat-id="${seatId}">
+                    ${seatId}
+                </div>
+            `;
             seatNum++;
         }
 
@@ -151,11 +158,17 @@ function generateSeatLayout() {
         // Kursi kanan
         for (let i = 0; i < r.right; i++) {
             const seatId = `${r.row}${seatNum}`;
-            const isBooked = bookedSeats.includes(seatId);
+            const isBooked = window.bookedSeats?.includes(seatId);
             const seatClass = isBooked ? 'seat booked' : 'seat available';
-            rowDiv.innerHTML += `<div class="${seatClass}" data-seat-id="${seatId}">${seatId}</div>`;
+
+            rowDiv.innerHTML += `
+                <div class="${seatClass}" data-seat-id="${seatId}">
+                    ${seatId}
+                </div>
+            `;
             seatNum++;
         }
+
         seating.appendChild(rowDiv);
 
         if (r.gapAfter) {
@@ -173,6 +186,9 @@ function generateSeatLayout() {
 
 function handleSeatClick(event) {
     const seat = event.currentTarget;
+
+    if (seat.classList.contains('booked')) return;
+
     const seatId = seat.getAttribute('data-seat-id');
 
     // Cek apakah kursi sudah dipilih
@@ -223,6 +239,7 @@ function updateSelectionSummary() {
     // Update daftar kursi terpilih
     if (seatList) {
         seatList.innerHTML = '';
+
         selectedSeats.forEach(seatId => {
             const badge = document.createElement('span');
             badge.className = 'selected-seat-badge';
@@ -255,30 +272,55 @@ function clearSelection() {
 
 function saveSelectionToSession() {
     // Simpan ke sessionStorage untuk persistensi sementara
-    sessionStorage.setItem('selectedSeats', JSON.stringify(selectedSeats));
+    sessionStorage.setItem(SEAT_SESSION_KEY, JSON.stringify(selectedSeats));
 }
 
 function loadPreviousSelection() {
-    // Load dari sessionStorage
-    const savedSeats = sessionStorage.getItem('selectedSeats');
-    if (savedSeats) {
-        try {
-            const parsedSeats = JSON.parse(savedSeats);
-            // Validasi dan apply seleksi
-            parsedSeats.forEach(seatId => {
-                const seatElement = document.querySelector(`[data-seat-id="${seatId}"]`);
-                if (seatElement && !seatElement.classList.contains('booked')) {
-                    seatElement.classList.add('selected');
-                    seatElement.classList.remove('available');
+    selectedSeats = [];
+    const savedSeats = sessionStorage.getItem(SEAT_SESSION_KEY);
+    if (!savedSeats) return;
+
+    try {
+        const parsedSeats = JSON.parse(savedSeats);
+
+        parsedSeats.forEach(seatId => {
+            const seatElement = document.querySelector(`[data-seat-id="${seatId}"]`);
+            if (seatElement && !seatElement.classList.contains('booked')) {
+                seatElement.classList.add('selected');
+                seatElement.classList.remove('available');
+
+                if (!selectedSeats.includes(seatId)) {
                     selectedSeats.push(seatId);
                 }
-            });
-            updateSelectionSummary();
-        } catch (e) {
-            console.error('Error loading saved seats:', e);
-        }
+            }
+        });
+
+        updateSelectionSummary();
+    } catch (e) {
+        console.error('Error loading previous seats:', e);
     }
 }
+
+
+// sessionStorage.getItem('selectedSeats');
+//     if (savedSeats) {
+//         try {
+//             const parsedSeats = JSON.parse(savedSeats);
+//             // Validasi dan apply seleksi
+//             parsedSeats.forEach(seatId => {
+//                 const seatElement = document.querySelector(`[data-seat-id="${seatId}"]`);
+//                 if (seatElement && !seatElement.classList.contains('booked')) {
+//                     seatElement.classList.add('selected');
+//                     seatElement.classList.remove('available');
+//                     selectedSeats.push(seatId);
+//                 }
+//             });
+//             updateSelectionSummary();
+//         } catch (e) {
+//             console.error('Error loading saved seats:', e);
+//         }
+//     }
+
 
 // Fungsi untuk show transaction modal
 function showTransactionModal() {
@@ -297,26 +339,39 @@ function showTransactionModal() {
 
 // Fungsi untuk update modal content
 function updateModalContent() {
+
+    if (!window.modalMovieData) {
+        console.error('modalMovieData not found');
+        return;
+    }
+
     const seatCount = selectedSeats.length;
     const ticketPrice = seatPrice * seatCount;
+    ticketTotalPrice = ticketPrice;
     totalPrice = ticketPrice + serviceFee;
+
 
     // Update movie info
     document.getElementById('modalMovieTitle').textContent = modalMovieData.title;
     document.getElementById('modalShowDate').textContent = `Date: ${modalMovieData.date}`;
     document.getElementById('modalShowTime').textContent = `Time: ${modalMovieData.time}`;
     document.getElementById('modalStudio').textContent = `Studio: ${modalMovieData.studio}`;
+    if (modalMovieData.poster) {
+        document.getElementById('modalPoster').src = modalMovieData.poster;
+    }
 
     // Update seats list
     const seatsContainer = document.getElementById('modalSeatsList');
     seatsContainer.innerHTML = '';
 
-    selectedSeats.forEach(seatId => {
-        const badge = document.createElement('div');
-        badge.className = 'seat-badge-modal';
-        badge.textContent = seatId;
-        seatsContainer.appendChild(badge);
-    });
+    const seatText = selectedSeats.join(', ');
+
+    const seatSpan = document.createElement('div');
+    seatSpan.className = 'seat-badge-modal';
+    seatSpan.textContent = seatText;
+
+    seatsContainer.appendChild(seatSpan);
+
 
     // Update ticket count and price
     document.getElementById('modalTicketCount').textContent = seatCount;
@@ -333,8 +388,9 @@ function closeTransactionModal() {
 }
 
 function confirmPaymentBtn(href) {
+    
     swal({
-        title: "Confirm Payment? (Dummy)",
+        title: "Confirm Payment?",
         text: "Make sure your selected seats are correct!",
         type: "warning",
         showCancelButton: true,
@@ -345,11 +401,13 @@ function confirmPaymentBtn(href) {
     }, function (isConfirm) {
         if (isConfirm) {
             const data = {
-                showtime_id: 1,
+                showtime_id: window.SHOWTIME_ID,
                 seats: selectedSeats,
-                total_price: totalPrice + serviceFee,
+                ticket_price: ticketTotalPrice, 
+                total_price: totalPrice,
                 tickets_qty: selectedSeats.length
             };
+
 
             fetch(href, {
                 method: 'POST',
@@ -370,16 +428,26 @@ function confirmPaymentBtn(href) {
                     }
                 })
                 .then(result => {
-                    console.log('Payment result:', result);
                     if (result.success) {
-                        swal("Payment Successful!", "Your payment has been processed.", "success")
-                        setTimeout(() => {
-                            window.location.href = 'seats.php?payment=success';
-                        }, 1500);
-                    } else {
-                        swal("Payment Failed!", result.message, "error");
+                        sessionStorage.removeItem(SEAT_SESSION_KEY);
+                        selectedSeats = [];
+
+                        swal({
+                            title: "Payment Success!",
+                            text: "Booking code: " + result.booking_code,
+                            type: "success",
+                            confirmButtonText: "View Ticket",
+                            closeOnConfirm: true
+                        }, function () {
+                            window.location.href =
+                                "ticket.php?booking_code=" + result.booking_code;
+                        });
+                    } 
+                    else {
+                        swal("Failed", result.message, "error");
                     }
                 })
+
             // .catch(error => {
             //     // console.error('Error:', error);
             //     swal("Payment Failed!", "An error occurred during payment.", "error");

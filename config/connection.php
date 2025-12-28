@@ -2,19 +2,11 @@
 $host = "localhost";
 $user = "root";
 $pass = "";
-$db = "cinemadb2";
+$db   = "cinemadb";
 
-try {
-    $conn = new PDO("mysql:host=$host;dbname=$db", $user, $pass);
-} catch (PDOException $e) {
-    // attempt to retry the connection after some timeout for example
-    echo 'Koneksi database gagal';
-    exit();
+$conn = new mysqli($host, $user, $pass, $db);
+
+if ($conn->connect_error) {
+    die("Koneksi database gagal: " . $conn->connect_error);
 }
-
-// echo 'koneksi sukses';
-
-require('dbConnect.php');
-$database = new dbConnection('cinemadb2');
-
 ?>

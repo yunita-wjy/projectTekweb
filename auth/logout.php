@@ -5,5 +5,5 @@
     unset($_SESSION['user']);
     session_destroy();
     // redirect ke login.php
-    header('Location: ../index.php?logout=success');
+    header('Location: ../customer/loginUI.php?logout=success');
 ?>

@@ -2,25 +2,42 @@
 session_start();
 require("../config/connection.php");
 
+$email    = $_POST['email'];
+$password = $_POST['password'];
 
-    $email    = $_POST['email'];
-    $password = $_POST['password'];
+// ambil user berdasarkan email
+$query = $conn->prepare("SELECT * FROM users WHERE email = ?");
+$query->bind_param("s", $email);
+$query->execute();
 
-    $user = $database->attemp($email, $password);
+$result = $query->get_result();
+$user = $result->fetch_assoc();
 
-    if ($user) {
-        $_SESSION['user'] = $user;
+if ($user && password_verify($password, $user['password'])) {
 
-        // cek role user
-        if ($user['role'] == 'admin') {
-            header("Location: ../admin/dashboard.php"); // ke dashboard admin
-        } else {
-            header("Location: ../index.php"); // ke homepage customer
-        }
-        exit();
-    } else {
-        header("Location: ../customer/loginUI.php?msg=failed"); // failed 
-        exit();
+    // cek domain email, kalau @filmverse.ac.id set role jadi admin
+    $role = $user['role'];
+    if (substr($email, -16) === "@filmverse.ac.id") {
+        $role = 'admin';
     }
 
+    $_SESSION['user'] = [
+        'user_id'  => $user['user_id'],
+        'username' => $user['username'],
+        'full_name' => $user['full_name'],
+        'email'    => $user['email'],
+        'role'     => $role
+    ];
+
+    // redirect berdasarkan role
+    if ($role === 'admin') {
+        header("Location: ../admin/dashboard.php");
+    } else {
+        header("Location: ../index.php");
+    }
+    exit();
+} else {
+    header("Location: ../customer/loginUI.php?msg=failed");
+    exit();
+}
 ?>

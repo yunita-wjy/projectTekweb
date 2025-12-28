@@ -1,273 +1,373 @@
 <?php
 session_start();
-$user = isset($_SESSION['user']) ? $_SESSION['user'] : null;
+require("../config/connection.php");
 
-// --- DATA DUMMY (Manual tanpa Database) ---
-$id = isset($_GET['id']) ? $_GET['id'] : 1;
+$user = $_SESSION['user'] ?? null;
 
-// List Data Film 
-$movies = [
-    1 => [
-        'title' => 'Spiderman: No Way Home', 
-        'img' => '../assets/film1.jpg', 
-        'genre' => 'Action, Adventure',
-        'year' => '2021',
-        'duration' => '148 Min',
-        'desc' => 'Identitas Spider-Man terungkap. Peter meminta bantuan Doctor Strange agar semua orang melupakan identitasnya. Namun, mantra itu kacau dan mendatangkan musuh-musuh Spider-Man dari semesta lain.'
-    ],
-    2 => [
-        'title' => 'Avatar: The Way of Water', 
-        'img' => '../assets/film2.jpg', 
-        'genre' => 'Sci-Fi, Adventure',
-        'year' => '2022',
-        'duration' => '192 Min',
-        'desc' => 'Jake Sully tinggal bersama keluarga barunya di planet Pandora. Setelah ancaman lama kembali untuk menyelesaikan apa yang telah dimulai, Jake harus bekerja sama dengan Neytiri dan tentara ras Na\'vi untuk melindungi planet mereka.'
-    ],
-    3 => [
-        'title' => 'The Batman', 
-        'img' => '../assets/film3.jpg', 
-        'genre' => 'Crime, Drama',
-        'year' => '2022',
-        'duration' => '176 Min',
-        'desc' => 'Batman menjelajah ke dunia bawah tanah Kota Gotham ketika seorang pembunuh sadis meninggalkan jejak petunjuk samar. Batman harus menjalin hubungan baru dan membuka kedok pelakunya.'
-    ],
-    4 => [
-        'title' => 'Interstellar', 
-        'img' => '../assets/film4.jpg', 
-        'genre' => 'Sci-Fi, Drama',
-        'year' => '2014',
-        'duration' => '169 Min',
-        'desc' => 'Tim penjelajah melintasi lubang cacing di luar angkasa dalam upaya memastikan kelangsungan hidup umat manusia ketika bumi mulai tidak layak huni.'
-    ]
-];
+if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'customer') {
+    header("Location: ../auth/login.php");
+    exit();
+}
 
-// Ambil data film berdasarkan ID, kalau tidak ada, default ke film 1
-$m = isset($movies[$id]) ? $movies[$id] : $movies[1];
+$id = $_GET['id'] ?? 0;
+
+$stmt = $conn->prepare("SELECT * FROM movies WHERE movie_id = ?");
+$stmt->bind_param("i", $id);
+$stmt->execute();
+$movie = $stmt->get_result()->fetch_assoc();
+
+// link trailer Youtube 
+$youtubeId = null;
+
+if (!empty($movie['trailer_url'])) {
+    parse_str(parse_url($movie['trailer_url'], PHP_URL_QUERY), $yt);
+    $youtubeId = $yt['v'] ?? null;
+}
+
+// Ambil genre movie
+$genreQuery = $conn->prepare("
+    SELECT g.genre_name
+    FROM movie_genre mg
+    JOIN genres g ON mg.genre_id = g.genre_id
+    WHERE mg.movie_id = ?
+");
+$genreQuery->bind_param("i", $id);
+$genreQuery->execute();
+$genres = $genreQuery->get_result()->fetch_all(MYSQLI_ASSOC);
+
+
+// Ambil showtimes di db
+$showtimesQuery = $conn->prepare("
+    SELECT showtime_id, show_date, start_time
+    FROM showtimes
+    WHERE movie_id = ?
+      AND show_date >= CURDATE()
+    ORDER BY show_date, start_time
+");
+
+$showtimesQuery->bind_param("i", $id);
+$showtimesQuery->execute();
+$showtimes = $showtimesQuery->get_result()->fetch_all(MYSQLI_ASSOC);
+
+$showtimesByDate = [];
+foreach ($showtimes as $st) {
+    $showtimesByDate[$st['show_date']][] = [
+        'id' => $st['showtime_id'],
+        'time' => $st['start_time']
+    ];
+}
+
+
+$hasShowtimes = !empty($showtimes);
+
 ?>
-
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id">
 <head>
-    <meta charset="UTF-8" />
-    <title>Detail: <?= $m['title'] ?></title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <meta charset="UTF-8">
+    <title><?= $movie ? htmlspecialchars($movie['title']) : 'Movie Detail' ?></title>
+
+    <!-- Bootstrap -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- CSS -->
+    <link rel="stylesheet" href="../style.css">
+
     <style>
-        /* Reset & Dark Mode Base */
-        body { 
-            background-color: #141414; 
-            color: white; 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-
-        /* --- NAVBAR STYLING --- */
-        #main-header {
-            background-color: rgba(0,0,0,0.9);
-            box-shadow: 0 2px 10px rgba(0,0,0,0.5);
-            padding: 10px 0;
-        }
-        .navbar-brand img { height: 40px; margin-right: 10px; }
-        .navbar-brand span { font-weight: bold; font-size: 1.5rem; color: #fff; }
-        .nav-link { color: #ccc !important; font-weight: 500; margin-right: 15px; }
-        .nav-link:hover { color: #E50914 !important; }
-        
-        .btn-login {
-            background-color: #E50914;
-            color: white !important;
-            padding: 8px 25px;
-            border-radius: 5px;
-            text-decoration: none;
-            font-weight: bold;
-            transition: 0.3s;
-        }
-        .btn-login:hover { background-color: #b20710; }
-
-        /* --- DETAIL SECTION --- */
-        .detail-container {
-            padding: 50px 0;
-            /* Background Blur effect dari poster */
-            background: linear-gradient(to right, #141414 20%, rgba(20,20,20,0.85) 60%, rgba(20,20,20,0.85) 100%), 
-                        url('<?= $m['img'] ?>');
-            background-size: cover;
-            background-position: center;
-            min-height: 80vh;
+        body {
+            min-height: 100vh;
             display: flex;
-            align-items: center;
+            flex-direction: column;
+        }
+        main {
+            flex: 1;
         }
 
-        .poster-hd {
+        /* style trailer */
+        /* .trailer-wrapper {
             width: 100%;
-            max-width: 300px;
-            border-radius: 10px;
-            box-shadow: 0 0 20px rgba(0,0,0,0.5);
-            border: 1px solid #333;
-        }
+            aspect-ratio: 16 / 9;
+            max-height: 320px;   /* ini yang bikin nggak kegedean */
+        /* } */
 
-        .info-hd h1 { font-size: 3.5rem; font-weight: 800; margin-bottom: 10px; line-height: 1.1; }
-        .meta-tags span { margin-right: 15px; font-size: 1.1rem; color: #ccc; }
-        .synopsis { font-size: 1.1rem; line-height: 1.6; color: #ddd; margin-top: 20px; max-width: 700px; }
+        /* .trailer-wrapper iframe {
+            width: 100%;
+            height: 320px;
+            border: 0;
+        } */
 
-        .btn-ticket {
-            background-color: #E50914; 
-            color: white; 
-            padding: 15px 40px; 
-            border: none; 
-            border-radius: 5px; 
-            font-size: 1.2rem; 
-            font-weight: bold;
-            margin-top: 30px;
-            text-decoration: none;
-            display: inline-block;
-            transition: 0.3s;
-        }
-        .btn-ticket:hover { background-color: #b20710; color: white; transform: scale(1.05); }
-
-        /* --- FAKE TRAILER --- */
         .trailer-box {
-            margin-top: 30px;
-            width: 200px;
-            height: 120px;
-            background-color: #000;
-            border-radius: 10px;
             position: relative;
+            width: 100%;
+            height: 300px;          /* tinggi aman */
             cursor: pointer;
-            border: 2px solid #333;
             overflow: hidden;
+            border-radius: 12px;
+        }
+
+        .trailer-thumb {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .trailer-box iframe {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            border: 0;
+            display: none;
+        }
+
+        .play-btn {
+            position: absolute;
+            inset: 0;
             display: flex;
-            align-items: center;
             justify-content: center;
-            transition: 0.3s;
-        }
-        .trailer-box:hover { border-color: #E50914; }
-        .trailer-bg {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            object-fit: cover; opacity: 0.5;
-        }
-        .play-icon {
-            z-index: 2; color: white; font-size: 40px;
-            filter: drop-shadow(0 0 10px black);
-        }
-        .trailer-label {
-            position: absolute; bottom: 5px; left: 10px; z-index: 2;
-            font-size: 12px; font-weight: bold;
+            align-items: center;
+            background: rgba(0,0,0,0.35);
         }
 
-        /* --- FOOTER --- */
-        footer { background: #000; padding: 40px 0; margin-top: 50px; border-top: 1px solid #333; text-align: center; color: #777; }
-        footer ul { list-style: none; padding: 0; }
-        footer ul li { display: inline; margin: 0 10px; }
-        footer a { color: #777; text-decoration: none; }
-        footer a:hover { color: white; }
-
-        @media (max-width: 768px) {
-            .detail-container { flex-direction: column; text-align: center; background: #141414; }
-            .poster-hd { margin-bottom: 30px; }
-            .info-hd h1 { font-size: 2.5rem; }
+        .play-btn i {
+            font-size: 64px;
+            color: white;
+            background: rgba(0,0,0,0.6);
+            padding: 24px 28px;
+            border-radius: 50%;
+            transition: transform 0.2s ease;
         }
+
+        .trailer-box:hover .play-btn i {
+            transform: scale(1.1);
+        }
+
+        /* durasi dan genre */
+        .movie-meta {
+            font-size: 14px;
+        }
+
+        .movie-meta .badge {
+            font-weight: 500;
+            opacity: 0.9;
+        }
+
+
+
+      
     </style>
 </head>
 
 <body>
-    
-    <nav id="main-header" class="navbar navbar-expand-lg navbar-dark fixed-top">
-        <div class="container">
-            <a class="navbar-brand d-flex align-items-center" href="../index.php">
-                <img src="../assets/filmVerse-light.png" alt="logo" />
-                <span>FilmVerse</span>
-            </a>
-            
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
 
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto align-items-center">
-                    <li class="nav-item">
-                        <a class="nav-link" href="../index.php">Home</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="../index.php#films">Movies</a>
-                    </li>
-                    <li class="nav-item ms-3">
-                        <?php if ($user): ?>
-                            <a href="profile.php" class="nav-link text-white">
-                                <i class="fa-regular fa-user me-2"></i> <?= htmlspecialchars($user['username']) ?>
-                            </a>
-                        <?php else: ?>
-                            <a href="loginUI.php" class="btn-login">Login</a>
-                        <?php endif; ?>
-                    </li>
-                </ul>
+
+<?php include("../includes/header.php"); ?>
+
+<main class="container my-5">
+
+
+
+
+<?php if ($youtubeId): ?>
+<div class="trailer-box mb-5" onclick="playTrailer(this)">
+    <img 
+        src="https://img.youtube.com/vi/<?= $youtubeId ?>/hqdefault.jpg"
+        class="trailer-thumb"
+        alt="Trailer">
+    <div class="play-btn">
+        <i class="fa-solid fa-play"></i>
+    </div>
+    <iframe
+        data-src="https://www.youtube.com/embed/<?= $youtubeId ?>?autoplay=1"
+        src=""
+        allow="autoplay"
+        allowfullscreen>
+    </iframe>
+</div>
+<?php endif; ?>
+
+
+
+<?php if (!$movie): ?>
+    <p>Movie not found</p>
+<?php else: ?>
+    <div class="row">
+        <div class="col-md-4">
+            <div class="poster-wrapper">
+                <img src="../<?= htmlspecialchars($movie['poster_path']) ?>" alt="Poster">
             </div>
         </div>
-    </nav>
+        <div class="col-md-8">
+            <!-- TITLE -->
+            <h1 class="fw-bold" style="font-size: 32px;"><?= htmlspecialchars($movie['title']) ?></h1>
+            <div class="movie-meta mb-3">
+                <!-- GENRE -->
+                <?php if (!empty($genres)): ?>
+                    <?php foreach ($genres as $g): ?>
+                        <span class="badge bg-secondary me-1 px-2">
+                            <?= htmlspecialchars($g['genre_name']) ?>
+                        </span>
+                    <?php endforeach; ?>
+                <?php endif; ?>
 
-    <div class="detail-container">
-        <div class="container">
-            <div class="row align-items-center">
-                <div class="col-md-4 text-center">
-                    <img src="<?= $m['img'] ?>" class="poster-hd" alt="Poster Film">
-                </div>
+                <!-- DURATION -->
+                <span class="text-muted ms-2 movie-duration" data-min="<?= $movie['duration'] ?>">
+                    <i class="fa-regular fa-clock me-1"></i>
+                    <?= $movie['duration'] ?> min
+                </span>
+            </div>
+            <!-- SINOPSIS -->
+            <p><?= nl2br(htmlspecialchars($movie['synopsis'])) ?></p>
 
-                <div class="col-md-8 info-hd">
-                    <h1><?= $m['title'] ?></h1>
-                    
-                    <div class="meta-tags">
-                        <span><i class="fa-regular fa-clock text-danger"></i> <?= $m['duration'] ?></span>
-                        <span><i class="fa-solid fa-calendar-days text-danger"></i> <?= $m['year'] ?></span>
-                        <span class="badge bg-secondary"><?= $m['genre'] ?></span>
-                    </div>
+        <div class="card bg-light border-0 p-4 mt-4 shadow-sm">
+            <h5 class="fw-bold mb-3">Book Tickets</h5>
 
-                    <p class="synopsis"><?= $m['desc'] ?></p>
-                    
-                    <div class="d-flex align-items-center gap-4">
-                        <a href="ticket.php?title=<?= urlencode($m['title']) ?>&img=<?= urlencode($m['img']) ?>" class="btn-ticket">
-                            <i class="fa-solid fa-ticket me-2"></i> Get Ticket
-                        </a>
+            <?php if ($hasShowtimes): ?>
+                <!-- ADA SHOWTIME -->
+                <form action="seats.php" method="GET">
+                    <input type="hidden" name="movie_id" value="<?= $movie['movie_id'] ?>">
 
-                        <div class="trailer-box" onclick="alert('Memutar Trailer...')">
-                            <img src="<?= $m['img'] ?>" class="trailer-bg">
-                            <div class="play-icon"><i class="fa-solid fa-circle-play"></i></div>
-                            <span class="trailer-label">Watch Trailer</span>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Select Date</label>
+                            <select class="form-select" name="date" id="dateSelect" required>
+                                <?php foreach ($showtimesByDate as $date => $times): ?>
+                                    <option value="<?= $date ?>">
+                                        <?= date('d M Y', strtotime($date)) ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Showtime</label>
+                            <div class="btn-group w-100" role="group" id="timeContainer">
+                                <!-- radio button diisi JS -->
+                            </div>
                         </div>
                     </div>
 
+                    <button type="submit" id="continueBtn" class="btn btn-warning w-100 fw-bold py-2 mt-2">
+                        CONTINUE TO SEATS
+                    </button>
+                </form>
+
+
+            <?php else: ?>
+                <!-- TIDAK ADA SHOWTIME -->
+                <div class="alert alert-warning mb-0 text-center fw-semibold">
+                    Jadwal belum tersedia
                 </div>
-            </div>
+                <button class="btn btn-secondary w-100 fw-bold py-2 mt-3" disabled>
+                    BOOKING CLOSED
+                </button>
+            <?php endif; ?>
+        </div>
+
         </div>
     </div>
+<?php endif; ?>
+</main>
 
-    <footer>
-        <div class="container">
-            <div class="row">
-                <div class="col-md-4">
-                    <h5>Movies</h5>
-                    <ul>
-                        <li><a href="#">Action</a></li>
-                        <li><a href="#">Drama</a></li>
-                        <li><a href="#">Comedy</a></li>
-                    </ul>
-                </div>
-                <div class="col-md-4">
-                    <h5>Support</h5>
-                    <ul>
-                        <li><a href="#">FAQ</a></li>
-                        <li><a href="#">Help Center</a></li>
-                    </ul>
-                </div>
-                <div class="col-md-4">
-                    <h5>Social</h5>
-                    <ul>
-                        <li><a href="#">Instagram</a></li>
-                        <li><a href="#">Twitter</a></li>
-                    </ul>
-                </div>
+
+<?php include("../includes/footer.php"); ?>
+
+
+
+
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+const NOW_DATE = "<?= date('Y-m-d') ?>";
+const NOW_TIME = "<?= date('H:i') ?>";
+
+function playTrailer(el) {
+    const iframe = el.querySelector('iframe');
+    const thumb = el.querySelector('.trailer-thumb');
+    const playBtn = el.querySelector('.play-btn');
+
+    // set src baru saat diklik
+    iframe.src = iframe.dataset.src;
+
+    thumb.style.display = 'none';
+    playBtn.style.display = 'none';
+    iframe.style.display = 'block';
+}
+
+document.querySelectorAll('.movie-duration').forEach(el => {
+    const min = parseInt(el.dataset.min);
+    if (!isNaN(min)) {
+        const h = Math.floor(min / 60);
+        const m = min % 60;
+        el.textContent = h > 0 ? `${h}h ${m}m` : `${m}m`;
+    }
+});
+
+// filter tanggal showtimes
+const showtimes = <?= json_encode($showtimesByDate) ?>;
+
+const dateSelect = document.getElementById('dateSelect');
+const timeContainer = document.getElementById('timeContainer');
+const continueBtn = document.getElementById('continueBtn');
+
+function renderTimes(date) {
+    timeContainer.innerHTML = '';
+    continueBtn.disabled = true;
+
+    if (!showtimes[date]) return;
+
+    const now = new Date();
+    let firstEnabledChecked = false;
+
+    showtimes[date].forEach((item, index) => {
+        const showDateTime = new Date(date + ' ' + item.time);
+        const isPast = showDateTime <= now;
+        const id = `t${index}`;
+
+        timeContainer.innerHTML += `
+            <input type="radio" class="btn-check"
+                   name="showtime_id"
+                   id="${id}"
+                   value="${item.id}"
+                   ${isPast ? 'disabled' : ''}
+                   ${!firstEnabledChecked && !isPast ? 'checked' : ''}>
+
+            <label class="btn btn-outline-dark ${isPast ? 'disabled opacity-50' : ''}"
+                   for="${id}">
+                ${item.time.slice(0,5)}
+            </label>
+        `;
+
+        if (!isPast && !firstEnabledChecked) {
+            firstEnabledChecked = true;
+            continueBtn.disabled = false;
+        }
+    });
+
+    if (!firstEnabledChecked) {
+        timeContainer.innerHTML = `
+            <div class="text-muted small">
+                Semua jadwal di tanggal ini sudah lewat
             </div>
-            <p class="mt-4 small">&copy; 2025 FilmVerse. All Rights Reserved.</p>
-        </div>
-    </footer>
+        `;
+        continueBtn.disabled = true;
+    }
+}
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+// render pertama
+renderTimes(dateSelect.value);
+
+// render saat ganti tanggal
+dateSelect.addEventListener('change', () => {
+    renderTimes(dateSelect.value);
+});
+
+</script>
+
+
 </body>
 </html>

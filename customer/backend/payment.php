@@ -2,65 +2,144 @@
 session_start();
 header('Content-Type: application/json; charset=utf-8');
 require('../../config/connection.php');
+
 if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'customer') {
     http_response_code(401);
-    echo json_encode(['success' => false, 'message' => 'Unauthorized access']);
+    echo json_encode(['success' => false, 'message' => 'Unauthorized']);
     exit();
 }
 
-$raw_input = file_get_contents('php://input');
-file_put_contents('debug_log.txt', $raw_input);  // Simpan ke file untuk cek
-$data = json_decode($raw_input, true);
-if (!$data) {
-    http_response_code(400);
-    echo json_encode(['success' => false, 'message' => 'Invalid JSON input']);
-    exit;
+function generateBookingCode($conn) {
+    do {
+        $code = strtoupper(substr(md5(uniqid()), 0, 5));
+        $stmt = $conn->prepare("SELECT transaction_id FROM transactions WHERE booking_code = ?");
+        $stmt->bind_param("s", $code);
+        $stmt->execute();
+        $result = $stmt->get_result();
+    } while ($result->num_rows > 0);
+
+    return $code;
 }
 
-$user_id = $_SESSION['user']['user_id'];
-// $movie_id = $data['movie_id'];
-// $studio_id = $data['studio_id'];
-// $showtime_id = $data['showtime_id'];
-$showtime_id = 5; // temporary
-$seats = $data['seats'];
+// Ambil data JSON
+$data = json_decode(file_get_contents('php://input'), true);
+if (!$data) {
+    echo json_encode(['success' => false, 'message' => 'Invalid JSON']);
+    exit();
+}
+
+$user_id     = $_SESSION['user']['user_id'];
+$showtime_id = $data['showtime_id'];
+$seats       = $data['seats'];
 $total_price = $data['total_price'];
-$ticketQty = $data['tickets_qty'];
-$status = 'paid';
+$tickets_qty = count($seats);
+$status      = 'paid';
 
-file_put_contents('debug_log.txt', print_r([
-    'user_id' => $user_id,
-    'total_price' => $total_price,
-    'seats' => $seats,
-    'showtime_id' => $showtime_id,
-    'ticketQty' => $ticketQty,
-    'status' => $status
-], true));
+$booking_code = generateBookingCode($conn);
 
-$query = "INSERT INTO transactions (`user_id`, `total_price`, `showtime_id`, `tickets_qty`, `status`) 
-    VALUES ('$user_id', '$total_price', '$showtime_id', '$ticketQty', '$status')";
+// Ambil Studio
+$studioStmt = $conn->prepare("
+    SELECT studio_id 
+    FROM showtimes 
+    WHERE showtime_id = ?
+");
+$studioStmt->bind_param("i", $showtime_id);
+$studioStmt->execute();
+$studio = $studioStmt->get_result()->fetch_assoc();
 
-// header('Location: movies_detail.php?payment=success');
+if (!$studio) {
+    echo json_encode(['success' => false, 'message' => 'Studio not found']);
+    exit();
+}
 
-if ($conn->query($query)) {
-// Ambil transaction_id yang baru dibuat
-$transaction_id = $conn->lastInsertId();
-foreach ($seats as $seatData) {
-    $row = substr($seatData, 0, 1);
-    $col = (int) substr($seatData, 1);
+$studio_id = $studio['studio_id'];
 
-    // Cari seat_id dari tabel seats
-    $stmt = $conn->prepare("SELECT seat_id FROM seats WHERE seat_row = ? AND seat_col = ?");
-    $stmt->execute([$row, $col]);
-    $seat = $stmt->fetch();
+$conn->begin_transaction();
 
-    if ($seat) {
-        $seat_id = $seat['seat_id'];
-        $conn->query("INSERT INTO transaction_seats (transaction_id, seat_id, showtime_id) VALUES ('$transaction_id', '$seat_id', '$showtime_id')");
+// 1️) INSERT TRANSACTION
+$stmt = $conn->prepare("
+    INSERT INTO transactions 
+    (user_id, total_price, showtime_id, tickets_qty, status, booking_code)
+    VALUES (?, ?, ?, ?, ?, ?)
+");
+
+$stmt->bind_param(
+    "iiiiss",
+    $user_id,
+    $total_price,
+    $showtime_id,
+    $tickets_qty,
+    $status,
+    $booking_code
+);
+
+if (!$stmt->execute()) {
+    echo json_encode(['success' => false, 'message' => 'Transaction failed']);
+    exit();
+}
+
+$transaction_id = $conn->insert_id;
+
+// 2️) INSERT SEATS
+foreach ($seats as $seat) {
+    $row = substr($seat, 0, 1);
+    $col = (int) substr($seat, 1);
+
+    $seatStmt = $conn->prepare("
+        SELECT seat_id 
+        FROM seats 
+        WHERE seat_row = ? 
+            AND seat_column = ?
+            AND studio_id = ?
+    ");
+
+    $seatStmt->bind_param("sii", $row, $col, $studio_id);
+    $seatStmt->execute();
+    $seatResult = $seatStmt->get_result()->fetch_assoc();
+
+
+    if ($seatResult) {
+        $seat_id = $seatResult['seat_id'];
+
+        $checkSeat = $conn->prepare("
+            SELECT 1 FROM transaction_seats 
+            WHERE seat_id = ? AND showtime_id = ?
+        ");
+        $checkSeat->bind_param("ii", $seat_id, $showtime_id);
+        $checkSeat->execute();
+
+        if ($checkSeat->get_result()->num_rows > 0) {
+            $conn->rollback();
+            echo json_encode([
+                'success' => false,
+                'message' => 'Seat already booked'
+            ]);
+            exit();
+        }
+
+        $insertSeat = $conn->prepare("
+            INSERT INTO transaction_seats (transaction_id, seat_id, showtime_id)
+            VALUES (?, ?, ?)
+        ");
+        $insertSeat->bind_param("iii", $transaction_id, $seat_id, $showtime_id);
+        if (!$insertSeat->execute()) {
+            $conn->rollback();
+            echo json_encode([
+                'success' => false,
+                'message' => 'Failed to insert seat'
+            ]);
+            exit();
+        }
     }
 }
-    echo json_encode(['success' => true, 'message' => 'Payment successful']);
-    exit();
-} else {
-    echo json_encode(['success' => false, 'message' => 'Database error']);
-}
-exit;
+
+$conn->commit();
+
+// 3️) RESPONSE
+echo json_encode([
+    'success' => true,
+    'booking_code' => $booking_code,
+    'transaction_id' => $transaction_id
+]);
+exit();
+?>

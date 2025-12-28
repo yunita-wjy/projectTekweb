@@ -1,83 +1,111 @@
 <?php
 session_start();
-$user = isset($_SESSION['user']) ? $_SESSION['user'] : null;
-$title = isset($_GET['title']) ? $_GET['title'] : 'Film Pilihan';
-$img = isset($_GET['img']) ? $_GET['img'] : '../assets/film1.jpg';
+require "../config/connection.php";
+
+if (!isset($_SESSION['user'])) {
+    header("Location: ../auth/login.php");
+    exit;
+}
+
+
+$booking_code = $_GET['booking_code'] ?? '';
+if (!$booking_code) die("Invalid ticket");
+
+/* Ambil data ticket */
+$query = "
+SELECT 
+    t.booking_code,
+    m.title,
+    m.poster_path,
+    s.show_date,
+    s.start_time,
+    st.studio_name,
+    GROUP_CONCAT(CONCAT(se.seat_row, se.seat_column) ORDER BY se.seat_row) AS seats
+FROM transactions t
+JOIN showtimes s ON t.showtime_id = s.showtime_id
+JOIN movies m ON s.movie_id = m.movie_id
+JOIN studios st ON s.studio_id = st.studio_id
+JOIN transaction_seats ts ON t.transaction_id = ts.transaction_id
+JOIN seats se ON ts.seat_id = se.seat_id
+WHERE t.booking_code = ?
+GROUP BY t.transaction_id
+";
+
+$stmt = $conn->prepare($query);
+$stmt->bind_param("s", $booking_code);
+$stmt->execute();
+$data = $stmt->get_result()->fetch_assoc();
+
+if (!$data) die("Ticket not found");
 ?>
 
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Booking: <?= $title ?></title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="../style.css?v=2">
-    <style>
-        body { background-color: #f5f5f5; color: #333; }
-        #main-header { background-color: #1c1c1c; padding: 15px 0; margin-bottom: 30px; }
-        .logo-white { filter: invert(1); height: 40px; margin-right: 10px; }
-        .booking-card { background: white; padding: 30px; border-radius: 10px; box-shadow: 0 5px 20px rgba(0,0,0,0.1); }
-        .movie-info img { width: 100px; border-radius: 5px; margin-right: 20px; }
-    </style>
+<meta charset="UTF-8">
+<title>Your Ticket</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<style>
+.ticket-card {
+    max-width: 600px;
+    margin: 60px auto;
+    border-radius: 16px;
+    box-shadow: 0 15px 30px rgba(0,0,0,.15);
+    overflow: hidden;
+}
+.ticket-header {
+    background: #4ecdc4;
+    padding: 20px;
+    text-align: center;
+    font-weight: bold;
+}
+.ticket-body {
+    padding: 20px;
+}
+.ticket-body img {
+    max-width: 130px;
+    border-radius: 10px;
+}
+.booking-code {
+    font-size: 28px;
+    letter-spacing: 4px;
+    font-weight: bold;
+}
+</style>
 </head>
+
 <body>
-
-    <nav id="main-header" class="navbar navbar-dark">
-        <div class="container">
-            <a class="navbar-brand d-flex align-items-center" href="../index.php">
-                <img src="../assets/filmVerse-dark.png" class="logo-white">
-                <span>FilmVerse</span>
-            </a>
-            <a href="javascript:history.back()" class="btn btn-outline-light btn-sm">Kembali</a>
-        </div>
-    </nav>
-
-    <div class="container">
-        <div class="row justify-content-center">
-            <div class="col-md-8">
-                <div class="booking-card">
-                    <h3 class="mb-4">Atur Jadwal Nonton</h3>
-                    
-                    <div class="d-flex align-items-center mb-4 p-3 bg-light rounded movie-info">
-                        <img src="<?= $img ?>">
-                        <div>
-                            <h5 class="fw-bold mb-1"><?= $title ?></h5>
-                            <small class="text-muted">Bioskop XXI Surabaya</small>
-                        </div>
-                    </div>
-
-                    <form action="seats.php" method="GET">
-                        
-                        <input type="hidden" name="movie_title" value="<?= $title ?>">
-                        
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label fw-bold">Pilih Tanggal</label>
-                                <input type="date" name="date" class="form-control" required>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label fw-bold">Pilih Jam</label>
-                                <select name="time" class="form-select">
-                                    <option value="12:00">12:00 WIB</option>
-                                    <option value="15:30">15:30 WIB</option>
-                                    <option value="19:00">19:00 WIB</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <hr class="my-4">
-
-                        <div class="d-grid">
-                            <button type="submit" class="btn btn-dark btn-lg">
-                                Lanjut Pilih Kursi <i class="fa-solid fa-arrow-right ms-2"></i>
-                            </button>
-                        </div>
-                    </form>
-
-                </div>
-            </div>
-        </div>
+<div class="ticket-card bg-white">
+    <div class="ticket-header fw-bold text-white" style="font-size: 24px;">
+        MOVIE TICKET
     </div>
 
+    <div class="ticket-body">
+        <div class="row mb-3">
+            <div class="col-4">
+                <img src="../<?= $data['poster_path'] ?>">
+            </div>
+            <div class="col-8">
+                <h4 class="fw-bold"><?= $data['title'] ?></h4>
+                <p class="mb-1">Date      : <?= date('d M Y', strtotime($data['show_date'])) ?></p>
+                <p class="mb-1">Time      : <?= substr($data['start_time'],0,5) ?></p>
+                <p class="mb-1">Studio : <?= $data['studio_name'] ?></p>
+                <p class="mb-1">Seat      : <?= $data['seats'] ?></p>
+            </div>
+        </div>
+
+        <hr>
+
+        <div class="text-center">
+            <div class="text-muted">BOOKING CODE</div>
+            <div class="booking-code"><?= $data['booking_code'] ?></div>
+        </div>
+
+        <div class="d-flex gap-2 mt-4">
+            <a href="../index.php" class="btn btn-outline-secondary w-50">Home</a>
+            <a href="profile.php" class="btn btn-warning w-50">My Tickets</a>
+        </div>
+    </div>
+</div>
 </body>
 </html>

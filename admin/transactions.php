@@ -1,33 +1,89 @@
 <?php
-    
-    require "../config/connection.php";
-    require "../includes/admin_auth.php";
-    
-    // if(!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'admin'){
-    //     header("Location: ../auth/login.php");
-    //     exit();
-    // }
+require "../config/connection.php";
+require "../includes/admin_auth.php";
 
-    $transactions = $conn->query("
-        SELECT 
-            t.transaction_id,
-            t.created_at,
-            u.username,
-            m.title AS movie_title,
-            st.studio_name,
-            s.start_time,
-            t.tickets_qty,
-            t.total_price,
-            t.status
-        FROM transactions t
-        JOIN users u ON t.user_id = u.user_id
-        JOIN showtimes s ON t.showtime_id = s.showtime_id
-        JOIN movies m ON s.movie_id = m.movie_id
-        JOIN studios st ON s.studio_id = st.studio_id
-        ORDER BY t.created_at DESC
-    ");
+$limit = 15;
+$page = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
+$offset = ($page - 1) * $limit;
+
+$q = $_GET['q'] ?? '';
+$date = $_GET['date'] ?? '';
+
+$where = [];
+$params = [];
+$types = "";
+
+if ($q) {
+    $where[] = "u.username LIKE ?";
+    $params[] = "%$q%";
+    $types .= "s";
+}
+if ($date) {
+    $where[] = "DATE(t.created_at) = ?";
+    $params[] = $date;
+    $types .= "s";
+}
+
+$sql = "
+SELECT 
+    t.transaction_id,
+    t.created_at,
+    u.username,
+    m.title AS movie_title,
+    st.studio_name,
+    s.start_time,
+    t.tickets_qty,
+    t.total_price,
+    t.status
+FROM transactions t
+JOIN users u ON t.user_id = u.user_id
+JOIN showtimes s ON t.showtime_id = s.showtime_id
+JOIN movies m ON s.movie_id = m.movie_id
+JOIN studios st ON s.studio_id = st.studio_id
+";
+
+if ($where) {
+    $sql .= " WHERE " . implode(" AND ", $where);
+}
+
+// HITUNG TOTAL DATA UNTUK PAGINATION
+$countSql = "SELECT COUNT(*) AS total 
+FROM transactions t
+JOIN users u ON t.user_id = u.user_id
+JOIN showtimes s ON t.showtime_id = s.showtime_id
+JOIN movies m ON s.movie_id = m.movie_id
+JOIN studios st ON s.studio_id = st.studio_id";
+
+if ($where) {
+    $countSql .= " WHERE " . implode(" AND ", $where);
+}
+
+$totalStmt = $conn->prepare($countSql);
+if ($params) {
+    $totalStmt->bind_param($types, ...$params);
+}
+
+$totalStmt->execute();
+$totalStmt->bind_result($totalCount);
+$totalStmt->fetch();
+$totalStmt->close();
+
+$totalPages = ceil($totalCount / $limit);
+
+
+
+$sql .= " ORDER BY t.created_at DESC LIMIT ?, ?";
+$params[] = $offset;
+$params[] = $limit;
+$types .= "ii";
+
+$stmt = $conn->prepare($sql);
+if ($params) $stmt->bind_param($types, ...$params);
+$stmt->execute();
+$transactions = $stmt->get_result();
 
 ?>
+
 
 <!DOCTYPE html>
 <html>
@@ -131,9 +187,16 @@
                     <div class="card mb-4 shadow-sm">
                         <div class="card-header d-flex justify-content-between align-items-center">
                             <h5 class="mb-0 fw-bold">RECENT TRANSACTIONS</h5>
-                            <form class="d-flex">
-                                <input id="searchTitle" class="form-control form-control-sm me-2" placeholder="Search User..." style="width: 200px;">
-                                <button id="btnSearch" class="btn btn-outline-primary btn-sm" type="button" >Search</button>
+                            <form class="d-flex gap-2">
+                                <input type="date"
+                                    id="filterDate"
+                                    class="form-control form-control-sm"
+                                    value="<?= $_GET['date'] ?? '' ?>">
+
+                                <input id="searchTitle"
+                                    class="form-control form-control-sm"
+                                    placeholder="Search User..."
+                                    style="width: 200px;">
                             </form>
                         </div>
                         <div class="card-body p-0">
@@ -153,31 +216,41 @@
                                             <th>Status</th> <!--paid/unpaid (default paid)-->
                                         </tr>
                                     </thead>
-                                    <tbody>
-                                        <?php $no = 1; while($row = $transactions->fetch_assoc()): ?>
-                                        <tr>
-                                            <td><?= $no++ ?></td>
-                                            <td><?= date('Y-m-d', strtotime($row['created_at'])) ?></td>
-                                            <td><?= date('H:i', strtotime($row['created_at'])) ?></td>
-                                            <td><?= htmlspecialchars($row['username']) ?></td>
-                                            <td><?= htmlspecialchars($row['movie_title']) ?></td>
-                                            <td><?= substr($row['start_time'], 0, 5) ?></td>
-                                            <td><?= htmlspecialchars($row['studio_name']) ?></td>
-                                            <td><?= $row['tickets_qty'] ?></td>
-                                            <td><?= number_format($row['total_price']) ?></td>
-                                            <td>
-                                                <span class="badge 
-                                                    <?= $row['status']=='paid' ? 'bg-success' : 
-                                                    ($row['status']=='cancelled' ? 'bg-danger' : 'bg-warning') ?>">
-                                                    <?= strtoupper($row['status']) ?>
-                                                </span>
-                                            </td>
-                                        </tr>
-                                        <?php endwhile; ?>
+                                    <tbody id="transactionTableBody">
+                                    <?php $no = $offset+1; while($row = $transactions->fetch_assoc()): ?>
+                                    <tr>
+                                        <td><?= $no++ ?></td>
+                                        <td><?= date('Y-m-d', strtotime($row['created_at'])) ?></td>
+                                        <td><?= date('H:i', strtotime($row['created_at'])) ?></td>
+                                        <td><?= htmlspecialchars($row['username']) ?></td>
+                                        <td><?= htmlspecialchars($row['movie_title']) ?></td>
+                                        <td><?= substr($row['start_time'],0,5) ?></td>
+                                        <td><?= htmlspecialchars($row['studio_name']) ?></td>
+                                        <td><?= $row['tickets_qty'] ?></td>
+                                        <td><?= number_format($row['total_price']) ?></td>
+                                        <td><span class="badge <?= $row['status']=='paid' ? 'bg-success' : ($row['status']=='cancelled' ? 'bg-danger':'bg-warning') ?>"><?= strtoupper($row['status']) ?></span></td>
+                                    </tr>
+                                    <?php endwhile; ?>
                                     </tbody>
 
 
+
+
                                 </table>
+                                    <!-- Pagination -->
+                                    <nav class="mt-2 ms-3">
+                                        <ul class="pagination justify-content-left">
+                                            <?php if($page>1): ?>
+                                            <li class="page-item"><a class="page-link" href="#" onclick="fetchTransactions(<?= $page-1 ?>)">Prev</a></li>
+                                            <?php endif; ?>
+                                            <?php for($p=1;$p<=$totalPages;$p++): ?>
+                                            <li class="page-item <?= $p==$page ? 'active' : '' ?>"><a class="page-link" href="#" onclick="fetchTransactions(<?= $p ?>)"><?= $p ?></a></li>
+                                            <?php endfor; ?>
+                                            <?php if($page<$totalPages): ?>
+                                            <li class="page-item"><a class="page-link" href="#" onclick="fetchTransactions(<?= $page+1 ?>)">Next</a></li>
+                                            <?php endif; ?>
+                                        </ul>
+                                    </nav>
 
                             </div>
                         </div>
@@ -193,19 +266,41 @@
         </div>
 
         <script>
-        const searchInput = document.getElementById("searchTitle");
-        const tbody = document.getElementById("transactionTableBody");
+            const searchInput = document.getElementById("searchTitle");
+            const dateInput = document.getElementById("filterDate");
+            const tbody = document.getElementById("transactionTableBody");
 
-        searchInput.addEventListener("keyup", function () {
-            const keyword = this.value;
+            let timer = null;
 
-            fetch(`ajax/search_transactions.php?q=${encodeURIComponent(keyword)}`)
+            function fetchTransactions(page=1){
+                const q = searchInput.value;
+                const date = dateInput.value;
+
+                const params = new URLSearchParams();
+                if(q) params.append("q",q);
+                if(date) params.append("date",date);
+                params.append("page", page);
+
+                fetch("transactions.php?" + params.toString(), {headers:{"X-Requested-With":"XMLHttpRequest"}})
                 .then(res => res.text())
                 .then(html => {
-                    tbody.innerHTML = html;
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(html,"text/html");
+                    tbody.innerHTML = doc.getElementById("transactionTableBody").innerHTML;
+
+                    // Update pagination
+                    const pag = document.querySelector(".pagination");
+                    pag.innerHTML = doc.querySelector(".pagination").innerHTML;
                 });
-        });
+            }
+
+            searchInput.addEventListener("keyup",()=>{
+                clearTimeout(timer);
+                timer=setTimeout(()=>fetchTransactions(1),300);
+            });
+            dateInput.addEventListener("change",()=>fetchTransactions(1));
         </script>
+
 
     </body>
 </html>

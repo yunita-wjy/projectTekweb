@@ -1,112 +1,346 @@
 <?php
-session_start();
-$user = isset($_SESSION['user']) ? $_SESSION['user'] : null;
+    session_start();
+
+    $BASE_PATH = '/proyek/projectTekweb/';
+
+    if (isset($_SESSION['user'])) {
+        $user = $_SESSION['user'];
+    } else {
+        $user = null;
+    }
+
+    require "config/connection.php";
+
+    // Ambil film now showing di db
+    $nowShowing = mysqli_query($conn, "
+        SELECT DISTINCT
+            m.movie_id,
+            m.title,
+            m.poster_path,
+            m.duration
+        FROM movies m
+        JOIN showtimes s ON s.movie_id = m.movie_id
+        WHERE
+            m.status = 'active'
+            AND CURDATE() BETWEEN m.start_date AND m.end_date
+            AND s.show_date >= CURDATE()
+    ");
+
+    // Ambil satu film random yang sedang tayang
+    $heroMovieQuery = mysqli_query($conn, "
+        SELECT *
+        FROM movies
+        WHERE status = 'active'
+        AND CURDATE() BETWEEN start_date AND end_date
+        ORDER BY RAND()
+        LIMIT 1
+    ");
+    $heroMovie = mysqli_fetch_assoc($heroMovieQuery);
+
+    // Ambil movie coming soon di db
+    $comingSoon = mysqli_query($conn, "
+        SELECT 
+            movie_id,
+            title,
+            poster_path,
+            duration
+        FROM movies
+        WHERE status = 'coming_soon'
+        ORDER BY start_date ASC
+    ");
+
 ?>
 
+
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id">
 <head>
-    <meta charset="UTF-8" />
-    <title>Film Verse</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="assets/filmVerse-light.png" rel="icon" media="(prefers-color-scheme: light)" />
-    <link href="assets/filmVerse-dark.png" rel="icon" media="(prefers-color-scheme: dark)" />
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=2" />
-    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <meta charset="UTF-8">
+    <title>FILM VERSE</title>
+
+    <!-- BOOTSTRAP FIX -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="<?= $BASE_PATH ?>style.css?v=2"/>
+
+    <style>
+        body {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background: #f8f9fa;
+        }
+        footer {
+            margin-top: auto;
+        }
+
+        /* .movie-item p {}
+            min-height: 48px;
+        } */
+
+        .movie-card {
+            position: relative;
+            overflow: hidden;
+            border-radius: 12px;
+            width: 100%;
+            
+        }
+
+        .movie-card img {
+            width: 100%;     
+            aspect-ratio: 2 / 3;   
+            object-fit: cover;    
+            display: block;
+        }
+
+        .movie-card:hover img {
+            transform: scale(1.05);
+        }
+
+        .movie-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(0,0,0,0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            transition: 0.3s;
+        }
+
+        .poster-wrapper {
+            width: 280px;          
+            aspect-ratio: 2 / 3;   
+        }
+
+        .poster-wrapper img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;    
+            display: block;
+        }
+
+        .movie-card:hover .movie-overlay {
+            opacity: 1;
+        }
+
+        .movie-scroll {
+            display: flex;
+            gap: 16px;
+            overflow-x: auto;
+            scroll-behavior: smooth;
+            padding: 10px 0;
+        }
+
+        .movie-scroll::-webkit-scrollbar {
+            display: none;
+        }
+
+        .movie-item {
+            width: 280px;
+            flex-shrink: 0;
+        }
+
+        /* tombol panah */
+        .scroll-btn {
+            position: absolute;
+            top: 40%;
+            transform: translateY(-50%);
+            background: white;
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            box-shadow: 0 4px 10px rgba(0,0,0,.2);
+            z-index: 10;
+        }
+
+        .scroll-btn.left { left: -15px; }
+        .scroll-btn.right { right: -15px; }
+
+    </style>
 </head>
 
 <body>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+<?php include("includes/header.php"); ?>
+
+
+
+<main class="container my-1" style="padding-top: 70px;">
+    <!-- HERO -->
+    <div class="hero-container mb-5">
+        <?php if ($heroMovie): ?>
+
+        <div id="hero" 
+            style="--hero-bg: url('<?= htmlspecialchars($heroMovie['poster_path']) ?>');">
+
+            <!-- overlay gelap -->
+            <div class="hero-overlay"></div>
+
+            <!-- konten -->
+            <div class="row align-items-center hero-content p-5 text-white">
+                <!-- hero title & synopsis -->
+                <div class="col-md-8 ps-4">
+                    <h1 class="fw-bold" style="font-size: 28px;"><?= htmlspecialchars($heroMovie['title']) ?></h1>
+                    <p class="lead" style="font-size: 16px;">
+                        <?= nl2br(htmlspecialchars($heroMovie['synopsis'])) ?>
+                    </p>
+                    <a href="customer/movies_detail.php?id=<?= $heroMovie['movie_id'] ?>" class="btn btn-danger btn-lg mt-5">
+                        Watch Now
+                    </a>
+                </div>
+                <!-- hero poster -->
+                <div class="col-md-4 hero-image">
+                    <img src="<?= htmlspecialchars($heroMovie['poster_path'] ?? 'assets/movie_poster/default.jpg') ?>" 
+                        class="img-fluid rounded shadow">
+                </div>
+            </div>
+
+        </div>
+        <?php else: ?>
+            <p class="text-center text-muted">Tidak ada film untuk ditampilkan di hero.</p>
+        <?php endif; ?>
+    </div>
+
+
+
+    <!-- NOW SHOWING -->
+    <div class="d-flex justify-content-between align-items-center mb-2">
+        <h3 class="mb-0">Now Showing</h3>
+        <a href="customer/movies.php" class="btn btn-sm btn-outline-secondary">
+            Show More →
+        </a>
+    </div>
     
-    <header id="main-header">
-        <nav>
-            <div class="logo">
-                <img src="assets/filmVerse-light.png" alt="logo" />
-                <span>FilmVerse</span>
-            </div>
-            <ul class="menu">
-                <li><a href="index.php">Home</a></li>
-                <li><a href="#films">Movies</a></li>
-            </ul>
-            <div class="akun">
-                <?php if ($user): ?>
-                    <div class="dropdown">
-                        <a href="#" class="dropdown-toggle profile-toggle" data-bs-toggle="dropdown">
-                             <i class="fa-regular fa-user me-2"></i> Hi, <strong><?= htmlspecialchars($user['username']) ?></strong>
+    <div class="position-relative">
+        <!-- tombol kiri -->
+        <button class="scroll-btn left" onclick="scrollRow('nowShowingRow', -300)">
+            <i class="fas fa-chevron-left"></i>
+        </button>
+
+
+        <!-- list movies -->
+        <div class="movie-scroll" id="nowShowingRow">
+            <?php while ($movie = mysqli_fetch_assoc($nowShowing)): ?>
+            <div class="movie-item">
+                <div class="movie-card poster-wrapper">
+                    <img src="<?= htmlspecialchars($movie['poster_path']) ?>">
+                    <div class="movie-overlay">
+                        <a href="customer/movies_detail.php?id=<?= $movie['movie_id'] ?>" 
+                        class="btn btn-warning">
+                            Beli Tiket
                         </a>
-                        <ul class="dropdown-menu dropdown-menu-end">
-                            <li><a class="dropdown-item" href="customer/profile.php">Profile</a></li>
-                            <li><a class="dropdown-item text-danger" href="auth/logout.php">Logout</a></li>
-                        </ul>
                     </div>
-                <?php else: ?>
-                    <a href="customer/loginUI.php" class="login">Login</a>
-                <?php endif; ?>
+                </div>
+
+                <p class="mt-3 text-center fw-bold mb-0">
+                    <?= htmlspecialchars($movie['title']) ?>
+                </p>
+                <p 
+                class="text-center text-muted small movie-duration" 
+                data-minutes="<?= (int)$movie['duration'] ?>">
+                </p>
             </div>
-        </nav>
-    </header>
-
-    <section id="hero">
-        <div class="container">
-            <h1>Discover Your Next Favorite Movie</h1>
-            <p>Temukan film terbaru dan rasakan pengalaman sinema terbaik hanya di FilmVerse.</p> <br>
-            <a href="#films"><button id="watch">Watch now</button></a>
+            <?php endwhile; ?>
         </div>
-        <div class="hero-image">
-            <img src="assets/film1.jpg" alt="poster" />
-        </div>
-    </section>
 
-    <section id="films">
-        <h2>Now Showing</h2>
-        <div class="category">
-            <h3 id="most-viewed">Most Viewed</h3>
-            <div class="card-container">
-                <a href="customer/movies_detail.php?id=1" style="text-decoration: none;">
-                    <div class="card">
-                        <img src="assets/film1.jpg" />
-                        <p>Spiderman: No Way Home</p>
+        <!-- tombol kanan -->
+        <button class="scroll-btn right" onclick="scrollRow('nowShowingRow', 300)">
+            <i class="fas fa-chevron-right"></i>
+        </button>
+    </div>
+
+
+    <!-- COMING SOON -->
+    <div class="d-flex justify-content-between align-items-center mb-2 mt-5">
+        <h3 class="mb-0">Coming Soon</h3>
+        <a href="customer/movies.php" class="btn btn-sm btn-outline-secondary">
+            Show More →
+        </a>
+    </div>
+
+    <div class="position-relative">
+        <!-- tombol kiri -->
+        <button class="scroll-btn left" onclick="scrollRow('comingSoonRow', -300)">
+            <i class="fas fa-chevron-left"></i>
+        </button>
+
+        <!-- list movies -->
+        <div class="movie-scroll" id="comingSoonRow">
+            <?php while ($movie = mysqli_fetch_assoc($comingSoon)): ?>
+                <div class="movie-item">
+                    <div class="movie-card poster-wrapper">
+                        <img src="<?= htmlspecialchars($movie['poster_path']) ?>">
+                        <div class="movie-overlay">
+                            <a href="customer/movies_detail.php?id=<?= $movie['movie_id'] ?>" 
+                            class="btn btn-secondary">
+                                Coming Soon
+                            </a>
+                        </div>
                     </div>
-                </a>
-                
-                <a href="customer/movies_detail.php?id=2" style="text-decoration: none;">
-                    <div class="card">
-                        <img src="assets/film2.jpg" />
-                        <p>Avatar 2</p>
-                    </div>
-                </a>
 
-                <a href="customer/movies_detail.php?id=3" style="text-decoration: none;">
-                    <div class="card">
-                        <img src="assets/film3.jpg" />
-                        <p>The Batman</p>
-                    </div>
-                </a>
+                    <p class="mt-3 text-center fw-bold mb-0">
+                        <?= htmlspecialchars($movie['title']) ?>
+                    </p>
+                    <p 
+                    class="text-center text-muted small movie-duration" 
+                    data-minutes="<?= (int)$movie['duration'] ?>">
+                    </p>
+                </div>
+            <?php endwhile; ?>
+        </div>
 
-                <a href="customer/movies_detail.php?id=4" style="text-decoration: none;">
-                    <div class="card">
-                        <img src="assets/film4.jpg" />
-                        <p>Interstellar</p>
-                    </div>
-                </a>
-            </div>
-        </div>
-    </section>
+        <!-- tombol kanan -->
+        <button class="scroll-btn right" onclick="scrollRow('comingSoonRow', 300)">
+            <i class="fas fa-chevron-right"></i>
+        </button>
+    </div>
 
-    <footer>
-        <div class="footer-section">
-            <h4>Movies</h4>
-            <ul><li><a href="#">Action</a></li><li><a href="#">Drama</a></li></ul>
-        </div>
-        <div class="footer-section">
-            <h4>Support</h4>
-            <ul><li><a href="#">FAQ</a></li></ul>
-        </div>
-        <div class="footer-section">
-            <h4>Contact</h4>
-            <ul><li><a href="#">Email</a></li><li><a href="#">Instagram</a></li></ul>
-        </div>
-    </footer>
+
+
+
+
+</main>
+
+<?php include("includes/footer.php"); ?>
+
+<script>
+window.addEventListener("scroll", function () {
+    const header = document.getElementById("main-header");
+
+    if (window.scrollY > 10) {
+        header.classList.add("scrolled");
+    } else {
+        header.classList.remove("scrolled");
+    }
+});
+
+document.addEventListener("DOMContentLoaded", function () {
+    document.querySelectorAll(".movie-duration").forEach(el => {
+        const minutes = parseInt(el.dataset.minutes);
+
+        if (isNaN(minutes)) return;
+
+        const hours = Math.floor(minutes / 60);
+        const mins = minutes % 60;
+
+        let result = "";
+        if (hours > 0) result += hours + "h ";
+        if (mins > 0) result += mins + "m";
+
+        el.textContent = result.trim();
+    });
+});
+
+
+function scrollRow(id, value) {
+    document.getElementById(id).scrollLeft += value;
+}
+
+
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
